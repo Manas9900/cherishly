@@ -1,0 +1,456 @@
+﻿/* ==========================================================================
+   CHERISHLY SUBPAGE UI/UX MODERNIZATION
+   Applied across all 7 event experiences: Birthday, Girlfriend, Friendship,
+   Anniversary, Surprise/Proposal, Apology, Puzzle
+   ========================================================================== */
+
+/* Brand & Color Variables Override */
+:root,
+#om-bday-root,
+#om-gf-root,
+#om-frnd-root,
+#om-anniv-root,
+#om-surp-root,
+#om-apol-root,
+#om-puzz-root {
+  --bd-coral: #FF4D6D !important;
+  --bd-coral-deep: #C9184A !important;
+  --bd-grad: linear-gradient(135deg, #FF4D6D 0%, #FF758F 55%, #FFB703 100%) !important;
+  --bd-grad-hover: linear-gradient(135deg, #E63956 0%, #FF607E 55%, #FFA200 100%) !important;
+  --bd-ink: #18192B !important;
+  --bd-ink-soft: #636175 !important;
+  --bd-card-glass: #FFFFFF !important;
+  --bd-card-line: rgba(255, 77, 109, 0.2) !important;
+  --bd-input-bg: #FFFFFF !important;
+  --bd-shadow-soft: 0 16px 40px -10px rgba(61, 42, 35, 0.08) !important;
+  --bd-shadow-gold: 0 10px 24px -4px rgba(255, 77, 109, 0.45) !important;
+  
+  /* ES desktop system variables */
+  --es-solid: #FF4D6D !important;
+  --es-deep: #C9184A !important;
+  --es-acc: #FF758F !important;
+  --es-wash: #FFF0F3 !important;
+  --es-line: #F5DDE5 !important;
+  --es-ink: #18192B !important;
+  --es-soft: #636175 !important;
+  --es-surf: #FFFFFF !important;
+  --es-bg: #FFFDFE !important;
+  --es-bg2: #FFF5F7 !important;
+  --es-btn: linear-gradient(135deg, #FF4D6D 0%, #FF758F 55%, #FFB703 100%) !important;
+}
+
+/* ==========================================================================
+   1. TOP CHERISHLY BRAND NAV BAR (INJECTED ON ALL SUBPAGES)
+   ========================================================================== */
+.cherishly-subpage-nav {
+  position: fixed !important;
+  top: 14px !important;
+  left: 20px !important;
+  right: 20px !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 22px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1.5px solid rgba(255, 77, 109, 0.22) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 10px 30px -8px rgba(194, 24, 91, 0.16) !important;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  pointer-events: auto !important;
+}
+
+.cherishly-subpage-nav a {
+  text-decoration: none !important;
+}
+
+.ch-nav-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-weight: 800 !important;
+  font-size: 19px !important;
+  color: #18192B !important;
+}
+
+.ch-nav-logo-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #FF4D6D, #FF758F) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 10px rgba(255, 77, 109, 0.35) !important;
+}
+
+.ch-nav-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #C2185B !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  background: #FFF0F4 !important;
+  transition: all 0.2s ease !important;
+}
+
+.ch-nav-back:hover {
+  background: #FFE3EA !important;
+  transform: translateX(-2px) !important;
+}
+
+.ch-nav-right {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.ch-nav-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #18192B !important;
+  background: #FFF8E7 !important;
+  border: 1px solid #FFE082 !important;
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+}
+
+.ch-nav-wa {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0E6E58 !important;
+  background: #E8F5E9 !important;
+  border: 1px solid #C8E6C9 !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.ch-nav-wa:hover {
+  background: #D4EDDA !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   2. DESKTOP SPLIT PANEL (LEFT COLUMN)
+   ========================================================================== */
+@media (min-width: 768px) {
+  #om-bday-root.om-es > .om-es-pan,
+  #om-gf-root.om-es > .om-es-pan,
+  #om-frnd-root.om-es > .om-es-pan,
+  #om-anniv-root.om-es > .om-es-pan,
+  #om-surp-root.om-es > .om-es-pan,
+  #om-apol-root.om-es > .om-es-pan,
+  #om-puzz-root.om-es > .om-es-pan {
+    background: linear-gradient(155deg, #FFF0F4 0%, #FFE6EC 48%, #FFF7ED 100%) !important;
+    border-right: 1.5px solid rgba(255, 77, 109, 0.16) !important;
+    padding-top: 96px !important; /* Space below Cherishly brand header */
+    box-shadow: 6px 0 24px -10px rgba(194, 24, 91, 0.08) !important;
+  }
+
+  /* Badge in Left Panel */
+  .om-es-badge {
+    background: #FFFFFF !important;
+    border: 1px solid rgba(255, 77, 109, 0.25) !important;
+    box-shadow: 0 4px 12px rgba(255, 77, 109, 0.12) !important;
+    color: #FF4D6D !important;
+    border-radius: 999px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Giant Number */
+  .om-es-num {
+    background: linear-gradient(135deg, #FF4D6D 0%, #FF758F 60%, #FFAA00 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    filter: drop-shadow(0 4px 16px rgba(255, 77, 109, 0.15)) !important;
+  }
+
+  /* Title & Subtitle */
+  .om-es-h {
+    font-family: 'Young Serif', Georgia, serif !important;
+    color: #18192B !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .om-es-p {
+    font-family: 'Outfit', sans-serif !important;
+    color: #636175 !important;
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Step Checklist on Left */
+  .om-es-list {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 77, 109, 0.18) !important;
+    border-radius: 18px !important;
+    padding: 14px 20px !important;
+    box-shadow: 0 10px 24px -8px rgba(194, 24, 91, 0.08) !important;
+  }
+
+  .om-es-list li {
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 600 !important;
+    color: #4A4A6A !important;
+    border-top: 1px dashed rgba(255, 77, 109, 0.15) !important;
+    padding: 10px 0 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .om-es-list li.c {
+    color: #FF4D6D !important;
+    font-weight: 700 !important;
+  }
+}
+
+/* ==========================================================================
+   3. RIGHT FORM CONTAINER & RESTORED BEAUTIFUL CARD
+   ========================================================================== */
+@media (min-width: 768px) {
+  #om-bday-root.om-es #om-bday-wizard,
+  #om-gf-root.om-es #om-gf-wizard,
+  #om-frnd-root.om-es #om-frnd-wizard,
+  #om-anniv-root.om-es #om-anniv-wizard,
+  #om-surp-root.om-es #om-surp-wizard,
+  #om-apol-root.om-es #om-apol-wizard,
+  #om-puzz-root.om-es #om-puzz-wizard {
+    background: #FFFDFD radial-gradient(#F5D5DE 1px, transparent 1px) !important;
+    background-size: 20px 20px !important;
+    padding-top: 96px !important;
+    padding-bottom: 120px !important;
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  /* Restore the Focused Card in Desktop Mode */
+  #om-bday-root.om-es .om-bday-card,
+  #om-gf-root.om-es .om-gf-card,
+  #om-frnd-root.om-es .om-frnd-card,
+  #om-anniv-root.om-es .om-anniv-card,
+  #om-surp-root.om-es .om-surp-card,
+  #om-apol-root.om-es .om-apol-card,
+  #om-puzz-root.om-es .om-puzz-card {
+    display: block !important;
+    max-width: 520px !important;
+    width: 92% !important;
+    margin: 30px auto !important;
+    background: #FFFFFF !important;
+    border: 1.5px solid rgba(255, 77, 109, 0.18) !important;
+    border-radius: 24px !important;
+    padding: 34px 28px 30px !important;
+    box-shadow: 0 20px 50px -12px rgba(61, 42, 35, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+  }
+}
+
+/* ==========================================================================
+   4. FORM INPUTS & SELECTS
+   ========================================================================== */
+.om-es-tb,
+.om-bday-input,
+.om-gf-input,
+.om-frnd-input,
+.om-anniv-input,
+.om-surp-input,
+.om-apol-input,
+.om-puzz-input {
+  border: 1.5px solid #E4D8DF !important;
+  border-radius: 14px !important;
+  background-color: #FAFAFD !important;
+  color: #18192B !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 15.5px !important;
+  min-height: 52px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02) inset !important;
+  transition: all 0.2s ease !important;
+}
+
+.om-es-tb:focus,
+.om-bday-input:focus,
+.om-gf-input:focus,
+.om-frnd-input:focus,
+.om-anniv-input:focus,
+.om-surp-input:focus,
+.om-apol-input:focus,
+.om-puzz-input:focus {
+  border-color: #FF4D6D !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 0 0 4px rgba(255, 77, 109, 0.18) !important;
+  outline: none !important;
+}
+
+/* Input Tab Labels */
+.om-es-tl,
+.om-bday-label,
+.om-gf-label,
+.om-frnd-label,
+.om-anniv-label,
+.om-surp-label,
+.om-apol-label,
+.om-puzz-label {
+  background: #FFF0F3 !important;
+  border: 1.5px solid rgba(255, 77, 109, 0.25) !important;
+  border-bottom: 0 !important;
+  border-radius: 12px 12px 0 0 !important;
+  color: #C2185B !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 12.5px !important;
+  letter-spacing: 0.03em !important;
+  padding: 6px 14px 4px !important;
+}
+
+/* Dropdown Selects */
+select.om-es-tb,
+.om-bday-select,
+.om-gf-select,
+.om-anniv-select {
+  border: 1.5px solid #E4D8DF !important;
+  border-radius: 14px !important;
+  background-color: #FAFAFD !important;
+  color: #18192B !important;
+  font-weight: 600 !important;
+  min-height: 50px !important;
+}
+
+/* ==========================================================================
+   5. BOTTOM ACTION FOOTER & CTA BUTTON
+   ========================================================================== */
+#om-bday-root.om-es > .om-es-foot,
+#om-gf-root.om-es > .om-es-foot,
+#om-frnd-root.om-es > .om-es-foot,
+#om-anniv-root.om-es > .om-es-foot,
+#om-surp-root.om-es > .om-es-foot,
+#om-apol-root.om-es > .om-es-foot,
+#om-puzz-root.om-es > .om-es-foot {
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-top: 1.5px solid rgba(255, 77, 109, 0.16) !important;
+  box-shadow: 0 -8px 24px rgba(194, 24, 91, 0.06) !important;
+  padding: 16px 36px 20px !important;
+}
+
+/* Primary Action CTA Button */
+.om-es-cta:not([disabled]),
+.om-bday-btn:not([disabled]),
+.om-gf-btn:not([disabled]),
+.om-frnd-btn:not([disabled]),
+.om-anniv-btn:not([disabled]),
+.om-surp-btn:not([disabled]),
+.om-apol-btn:not([disabled]),
+.om-puzz-btn:not([disabled]) {
+  background: linear-gradient(135deg, #FF4D6D 0%, #FF758F 55%, #FFB703 100%) !important;
+  color: #FFFFFF !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  letter-spacing: 0.02em !important;
+  border-radius: 999px !important;
+  min-height: 52px !important;
+  padding: 0 32px !important;
+  border: 0 !important;
+  box-shadow: 0 10px 24px -4px rgba(255, 77, 109, 0.45) !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+}
+
+.om-es-cta:not([disabled]):hover,
+.om-bday-btn:not([disabled]):hover,
+.om-gf-btn:not([disabled]):hover,
+.om-anniv-btn:not([disabled]):hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 14px 28px -4px rgba(255, 77, 109, 0.6) !important;
+}
+
+/* Disabled button state */
+.om-es-cta[disabled],
+.om-bday-btn[disabled],
+.om-gf-btn[disabled],
+.om-frnd-btn[disabled],
+.om-anniv-btn[disabled],
+.om-surp-btn[disabled],
+.om-apol-btn[disabled],
+.om-puzz-btn[disabled] {
+  background: #F3EAEF !important;
+  color: #A89AA3 !important;
+  border: 1.5px solid #E8DCE2 !important;
+  border-radius: 999px !important;
+  min-height: 52px !important;
+  font-weight: 700 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* Back Button */
+.om-es-bk,
+.om-bday-btn-ghost {
+  border-radius: 999px !important;
+  border: 1.5px solid #E2D6DC !important;
+  background: #FFFFFF !important;
+  color: #636175 !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  padding: 0 20px !important;
+  transition: all 0.2s ease !important;
+}
+
+.om-es-bk:hover,
+.om-bday-btn-ghost:hover {
+  background: #FFF0F4 !important;
+  color: #C2185B !important;
+  border-color: rgba(255, 77, 109, 0.3) !important;
+}
+
+/* ==========================================================================
+   6. MOBILE VIEW OPTIMIZATIONS
+   ========================================================================== */
+@media (max-width: 767px) {
+  .cherishly-subpage-nav {
+    top: 10px !important;
+    left: 12px !important;
+    right: 12px !important;
+    padding: 8px 14px !important;
+  }
+  .ch-nav-brand span:not(.ch-nav-logo-badge) {
+    font-size: 16px !important;
+  }
+  .ch-nav-badge {
+    display: none !important;
+  }
+  
+  .om-bday-card,
+  .om-gf-card,
+  .om-frnd-card,
+  .om-anniv-card,
+  .om-surp-card,
+  .om-apol-card,
+  .om-puzz-card {
+    padding: 24px 18px !important;
+    border-radius: 20px !important;
+    margin: 16px auto !important;
+    box-shadow: 0 12px 30px rgba(194, 24, 91, 0.08) !important;
+  }
+}

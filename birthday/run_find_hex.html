@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+<div id="out"></div>
+<script src="find_hex.js"></script>
+<script>
+var logs = [];
+var origLog = console.log;
+console.log = function(msg) {
+    logs.push(msg);
+    document.getElementById('out').innerText = logs.join('\n');
+    origLog.apply(console, arguments);
+};
+</script>
+</body>
+</html>

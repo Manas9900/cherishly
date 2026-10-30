@@ -1,0 +1,18 @@
+name = "cherishly"
+main = "cloudflare-worker.js"
+compatibility_date = "2024-09-23"
+
+# Static site assets (HTML/CSS/JS/Stickers/Images)
+[assets]
+directory = "."
+binding = "ASSETS"
+
+# Cloudflare R2 Bucket for Photo Uploads
+[[r2_buckets]]
+binding = "PHOTOS_BUCKET"
+bucket_name = "cherishly-photos"
+
+# Cloudflare KV for 14-Day Auto-Expiring Links
+[[kv_namespaces]]
+binding = "WISHES_KV"
+id = "YOUR_KV_NAMESPACE_ID"

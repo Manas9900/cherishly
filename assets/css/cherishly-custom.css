@@ -1,0 +1,327 @@
+/* ==========================================================================
+   CHERISHLY SIGNATURE THEME: WARM CORAL-SUNSET & CHAMPAGNE
+   Modern, elegant, cohesive, and clearly distinct from ourmoments.live
+   ========================================================================== */
+
+:root {
+  /* Warm Sunset & Coral Color Palette */
+  --ink: #18192B !important;
+  --body: #4A4A68 !important;
+  --mut: #82829E !important;
+  --ground: #FCF7F6 !important;
+  --blush: #FFF2F0 !important;
+  --ln: #F2DCD8 !important;
+
+  /* Signature Accents */
+  --pink: #FF4D6D !important;
+  --pinkd: #C9184A !important;
+  --coral: #FF758F !important;
+  --amber: #FF9F1C !important;
+  --gold: #FFB703 !important;
+  --champagne: #FFF0ED !important;
+
+  --ch-gradient: linear-gradient(135deg, #FF4D6D 0%, #FF758F 55%, #FFB703 100%) !important;
+  --ch-glow-btn: 0 10px 24px -4px rgba(255, 77, 109, 0.42);
+  --ch-glass-card: rgba(255, 255, 255, 0.94);
+}
+
+/* Background Atmosphere */
+.omh-root {
+  background: var(--ground) !important;
+  background-image: 
+    radial-gradient(at 10% 10%, rgba(255, 77, 109, 0.07) 0px, transparent 45%),
+    radial-gradient(at 90% 20%, rgba(255, 183, 3, 0.08) 0px, transparent 40%),
+    radial-gradient(at 50% 80%, rgba(255, 117, 143, 0.06) 0px, transparent 50%) !important;
+}
+
+/* ==========================================================================
+   1. FLOATING BRAND HEADER & NAVIGATION
+   ========================================================================== */
+
+.omh-hd {
+  position: sticky !important;
+  top: 14px !important;
+  margin: 12px auto 0 !important;
+  max-width: 1140px !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 182, 193, 0.6) !important;
+  box-shadow: 0 12px 32px -8px rgba(30, 20, 25, 0.08) !important;
+  z-index: 999 !important;
+}
+
+.omh-bar {
+  padding: 10px 24px !important;
+}
+
+/* Brandmark Icon & Wordmark */
+.omh-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-decoration: none !important;
+}
+
+.cherishly-logo-box {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 14px !important;
+  background: var(--ch-gradient) !important;
+  box-shadow: 0 6px 18px -2px rgba(255, 77, 109, 0.4) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.cherishly-logo-box:hover {
+  transform: rotate(-5deg) scale(1.08) !important;
+}
+
+.cherishly-logo-box svg {
+  width: 22px !important;
+  height: 22px !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) !important;
+}
+
+.cherishly-brand-text {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--ink) !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.cherishly-brand-text .ch-accent {
+  background: var(--ch-gradient) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-weight: 800 !important;
+}
+
+.cherishly-brand-text .ch-tld {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #FF4D6D, #FF758F) !important;
+  padding: 2px 7px !important;
+  border-radius: 6px !important;
+  margin-left: 6px !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* Nav Links Pill Hover */
+.omh-nav a {
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  color: #4A4A68 !important;
+  padding: 8px 16px !important;
+  border-radius: 20px !important;
+  transition: all 0.2s ease !important;
+}
+
+.omh-nav a:hover {
+  color: #FF4D6D !important;
+  background: rgba(255, 77, 109, 0.08) !important;
+}
+
+/* Occasions Bar with Floating Pastel Capsules */
+.omh-occ {
+  padding: 8px 20px 12px !important;
+  gap: 8px !important;
+  border-top: 1px solid rgba(255, 215, 225, 0.45) !important;
+}
+
+.omh-occ a {
+  padding: 6px 14px !important;
+  border-radius: 20px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #555577 !important;
+  background: #FFFDFD !important;
+  border: 1px solid rgba(255, 205, 215, 0.7) !important;
+  transition: all 0.25s ease !important;
+}
+
+.omh-occ a:hover {
+  background: #FFFFFF !important;
+  color: #FF4D6D !important;
+  border-color: #FF4D6D !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 14px -3px rgba(255, 77, 109, 0.2) !important;
+}
+
+/* WhatsApp Quick-Help Button in Nav */
+.ch-nav-wa {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #128C7E !important;
+  background: #E8F8F5 !important;
+  border: 1px solid #A3E4D7 !important;
+  padding: 7px 14px !important;
+  border-radius: 20px !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.ch-nav-wa:hover {
+  background: #128C7E !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   2. HERO SECTION ENHANCEMENT
+   ========================================================================= */
+
+.cherishly-hero-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 7px 18px !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(255, 77, 109, 0.25) !important;
+  border-radius: 30px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #C9184A !important;
+  box-shadow: 0 6px 16px -4px rgba(255, 77, 109, 0.14) !important;
+  margin-bottom: 20px !important;
+}
+
+.cherishly-badge-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: #10B981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
+}
+
+/* Primary Sunset-Amber CTA Button */
+.omh-btn, a.omh-btn {
+  background: var(--ch-gradient) !important;
+  box-shadow: var(--ch-glow-btn) !important;
+  border-radius: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+
+.omh-btn:hover, a.omh-btn:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 16px 32px -4px rgba(255, 77, 109, 0.52) !important;
+}
+
+/* Price Stamp with Golden Glow */
+.omh-stamp > span {
+  border: 1.5px solid #FF4D6D !important;
+  color: #C9184A !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+}
+
+/* Trust & Feature Strip */
+.cherishly-feature-strip {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 22px !important;
+  padding: 16px 24px !important;
+  margin: 20px auto 40px !important;
+  max-width: 960px !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(255, 215, 225, 0.8) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 24px -6px rgba(255, 77, 109, 0.08) !important;
+}
+
+.ch-feature-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #3E3E5B !important;
+}
+
+/* ==========================================================================
+   3. POLAROID OCCASION CARDS
+   ========================================================================== */
+
+.omh-pola {
+  border-radius: 20px !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 12px 28px -6px rgba(30, 20, 25, 0.08), 0 0 0 1px rgba(255, 205, 215, 0.5) !important;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease !important;
+}
+
+.omh-pola:hover {
+  transform: translateY(-9px) scale(1.025) !important;
+  box-shadow: 0 24px 44px -8px rgba(255, 77, 109, 0.25) !important;
+  z-index: 10 !important;
+}
+
+.omh-pola-bar b {
+  color: #FF4D6D !important;
+  font-weight: 800 !important;
+  font-size: 15.5px !important;
+}
+
+.occ-badge-pill {
+  position: absolute !important;
+  top: 14px !important;
+  right: 14px !important;
+  z-index: 10 !important;
+  padding: 5px 12px !important;
+  border-radius: 20px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18) !important;
+}
+
+.occ-badge-popular {
+  background: linear-gradient(135deg, #FF4D6D, #FF758F) !important;
+  color: #FFFFFF !important;
+}
+
+.occ-badge-trending {
+  background: linear-gradient(135deg, #8B5CF6, #EC4899) !important;
+  color: #FFFFFF !important;
+}
+
+.occ-badge-classic {
+  background: linear-gradient(135deg, #F59E0B, #FF9F1C) !important;
+  color: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   4. HIGH-CONTRAST DARK FOOTER
+   ========================================================================== */
+
+.omh-ftA {
+  background: #121324 !important;
+}
+
+.omh-ftA .cherishly-brand-text {
+  color: #FFFFFF !important;
+}
+
+.omh-ftA .cherishly-brand-text .ch-accent {
+  background: var(--ch-gradient) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.omh-ftA .cherishly-brand-text .ch-tld {
+  background: rgba(255, 77, 109, 0.25) !important;
+  color: #FF758F !important;
+}

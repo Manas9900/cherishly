@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<script>
+window.onload = function() {
+    const images = [
+        'om-hp-g-birthday.webp',
+        'om-hp-g-girlfriend.webp',
+        'om-hp-g-friendship.webp',
+        'om-hp-g-anniversary.webp',
+        'om-hp-g-surprise.webp',
+        'om-hp-g-apology.webp',
+        'om-hp-g-puzzle.webp',
+        'om-hp-s-step1.webp',
+        'om-hp-s-preview.webp'
+    ];
+    let loaded = 0;
+    const res = {};
+    images.forEach(name => {
+        const img = new Image();
+        img.onload = function() {
+            res[name] = img.naturalWidth + 'x' + img.naturalHeight;
+            loaded++;
+            if (loaded === images.length) {
+                document.body.innerText = JSON.stringify(res, null, 2);
+                document.title = 'DONE';
+            }
+        };
+        img.src = 'assets/images/' + name;
+    });
+};
+</script>
+</head>
+<body>Loading...</body>
+</html>

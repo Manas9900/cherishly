@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body>
+<div id="out"></div>
+<script>
+var lines = [];
+console.log = function(m) {
+    lines.push(m);
+    document.getElementById('out').innerText = lines.join('\n');
+};
+</script>
+<script src="check_keys.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Scratch & temporary logs
+scratch/
+*.log
+eval_out.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Dependencies
+node_modules/

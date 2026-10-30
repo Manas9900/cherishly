@@ -1,0 +1,63 @@
+/* ==========================================================================
+   POLISH: GIFT TAG, TEXTURE & HERO ELEMENTS
+   ========================================================================== */
+
+/* Hanging Gift Tag in Luxury Dark Glassmorphism */
+.omh-gtag {
+  background: rgba(26, 29, 56, 0.95) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.45) !important;
+  box-shadow: 0 20px 45px -5px rgba(0, 0, 0, 0.8), 0 0 25px rgba(139, 92, 246, 0.25) !important;
+}
+
+.omh-gtag::before {
+  background: #0B0D1B !important;
+  box-shadow: inset 0 0 0 2px #8B5CF6 !important;
+}
+
+.omh-gt-for {
+  color: #C4B5FD !important;
+  letter-spacing: 0.28em !important;
+}
+
+.omh-gt-name {
+  color: #F472B6 !important;
+  text-shadow: 0 0 16px rgba(244, 114, 182, 0.6) !important;
+  font-size: 38px !important;
+}
+
+.omh-gt-from {
+  color: #DDD6FE !important;
+  border-top: 1.5px dashed rgba(139, 92, 246, 0.4) !important;
+}
+
+.omh-gt-back {
+  background: rgba(26, 29, 56, 0.95) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.45) !important;
+}
+
+/* Hero Badge */
+.cherishly-hero-badge {
+  background: rgba(26, 28, 54, 0.9) !important;
+  border: 1px solid rgba(139, 92, 246, 0.5) !important;
+  color: #F5D0FE !important;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3) !important;
+  padding: 8px 18px !important;
+}
+
+/* Feature Strip Polish */
+.cherishly-feature-strip {
+  background: rgba(18, 20, 40, 0.9) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Section Header Typography Enhancement */
+.omh-h1 {
+  font-size: 58px !important;
+  line-height: 1.05 !important;
+}
+
+.omh-h2 {
+  font-size: 46px !important;
+  line-height: 1.1 !important;
+}

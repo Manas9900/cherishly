@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body>
+<script>
+// Let's inspect pixel brightness or draw crops
+const testImg = (src, startY, endY) => {
+    const img = new Image();
+    img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth;
+        c.height = endY - startY;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, -startY);
+        document.body.appendChild(c);
+        
+        const h = document.createElement('h4');
+        h.innerText = src + ' (' + startY + ' to ' + endY + ')';
+        document.body.appendChild(h);
+    };
+    img.src = src;
+};
+
+testImg('om-hp-g-girlfriend.webp', 480, 600);
+testImg('om-hp-g-surprise.webp', 330, 450);
+testImg('om-hp-s-step1.webp', 380, 560);
+testImg('om-hp-g-friendship.webp', 260, 360);
+</script>
+</body>
+</html>

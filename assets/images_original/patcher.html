@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { background: #222; color: #fff; font-family: sans-serif; padding: 20px; }
+canvas { border: 1px solid #444; margin: 10px; }
+</style>
+</head>
+<body>
+<h2>Patching Images to Perfection...</h2>
+<div id="output"></div>
+
+<script>
+const imagesToPatch = [
+    {
+        name: 'om-hp-g-birthday.webp',
+        outId: 'birthday',
+        process: (ctx, w, h) => {
+            const grad = ctx.createRadialGradient(w / 2, 450, 10, w / 2, 450, 130);
+            grad.addColorStop(0, '#261b36');
+            grad.addColorStop(0.6, '#20162e');
+            grad.addColorStop(1, '#1a1226');
+            ctx.fillStyle = grad;
+            ctx.fillRect(55, 412, 310, 78);
+            
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#E5B35C';
+            ctx.font = '500 27px sans-serif';
+            ctx.fillText('Shizuka', w / 2, 444);
+            
+            ctx.fillStyle = '#A39EB8';
+            ctx.font = '400 11.5px sans-serif';
+            ctx.fillText('Nobita made this — just for you.', w / 2, 477);
+        }
+    },
+    {
+        name: 'om-hp-g-girlfriend.webp',
+        outId: 'girlfriend',
+        process: (ctx, w, h) => {
+            ctx.fillStyle = '#FAF1DE';
+            ctx.fillRect(60, 532, 300, 50);
+            
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#7C1C1D';
+            ctx.font = 'italic 700 27px cursive, "Times New Roman", serif';
+            ctx.fillText('For you, Shizuka.', w / 2, 566);
+        }
+    },
+    {
+        name: 'om-hp-g-friendship.webp',
+        outId: 'friendship',
+        process: (ctx, w, h) => {
+            // Cover "Rahul built you a museum." at y=105 to 142
+            ctx.fillStyle = '#0E2C2D';
+            ctx.fillRect(30, 105, 360, 36);
+            
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '700 16.5px sans-serif';
+            ctx.fillText('Gian built you a ', w / 2 - 36, 130);
+            
+            ctx.fillStyle = '#E5B35C';
+            ctx.fillText('museum.', w / 2 + 56, 130);
+            
+            // Door signboard
+            ctx.fillStyle = '#FFFDF5';
+            ctx.fillRect(130, 298, 160, 22);
+            
+            ctx.fillStyle = '#222222';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.fillText('Gian', w / 2, 314);
+        }
+    },
+    {
+        name: 'om-hp-g-anniversary.webp',
+        outId: 'anniversary',
+        process: (ctx, w, h) => {
+            const grad = ctx.createRadialGradient(w / 2, 440, 10, w / 2, 440, 130);
+            grad.addColorStop(0, '#261b36');
+            grad.addColorStop(0.6, '#1f162e');
+            grad.addColorStop(1, '#171124');
+            ctx.fillStyle = grad;
+            ctx.fillRect(50, 404, 320, 74);
+            
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#F1CB74';
+            ctx.font = '600 23px sans-serif';
+            ctx.fillText('Shizuka & Nobita', w / 2, 434);
+            
+            ctx.fillStyle = '#A39EB8';
+            ctx.font = '400 11.5px sans-serif';
+            ctx.fillText('Nobita made this — just for you.', w / 2, 466);
+        }
+    },
+    {
+        name: 'om-hp-g-surprise.webp',
+        outId: 'surprise',
+        process: (ctx, w, h) => {
+            // Cover entire text block from y=388 to 455
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(40, 388, 340, 66);
+            
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1A1A2E';
+            ctx.font = 'bold 15px sans-serif';
+            ctx.fillText('Nobita has a surprise for', w / 2, 412);
+            ctx.fillText('you 💗', w / 2, 438);
+        }
+    },
+    {
+        name: 'om-hp-s-step1.webp',
+        outId: 'step1',
+        process: (ctx, w, h) => {
+            // Input 1 interior: cover from x=50 to 415, y=422 to 468
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(50, 422, 365, 46);
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#222222';
+            ctx.font = '400 15px sans-serif';
+            ctx.fillText('Shizuka', 72, 452);
+            
+            // Input 2 interior: cover from x=50 to 415, y=524 to 570
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(50, 524, 365, 46);
+            ctx.fillText('Nobita', 72, 554);
+        }
+    }
+];
+
+let completed = 0;
+imagesToPatch.forEach(item => {
+    const img = new Image();
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        item.process(ctx, canvas.width, canvas.height);
+        
+        document.body.appendChild(canvas);
+        
+        const dataUrl = canvas.toDataURL('image/png');
+        const div = document.createElement('div');
+        div.id = item.outId;
+        div.setAttribute('data-filename', item.name);
+        div.textContent = dataUrl;
+        document.getElementById('output').appendChild(div);
+        
+        completed++;
+        if (completed === imagesToPatch.length) {
+            document.title = 'READY_TO_SAVE';
+        }
+    };
+    img.src = item.name;
+});
+</script>
+</body>
+</html>

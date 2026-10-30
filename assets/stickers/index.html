@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Inspect User Stickers</title>
+  <style>
+    body { font-family: sans-serif; background: #fdf2f4; padding: 20px; }
+    h1 { color: #d63384; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .card { background: white; border-radius: 12px; padding: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); text-align: center; }
+    .card img { max-width: 100%; max-height: 150px; object-fit: contain; }
+    .card .name { font-size: 11px; color: #555; margin-top: 8px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>User Stickers from D:\Stickers</h1>
+  
+  <h2>Cute Kitten Folder</h2>
+  <div class="grid" id="kitten-grid"></div>
+
+  <h2>Dudu Bubu Folder</h2>
+  <div class="grid" id="dudu-grid"></div>
+
+  <script>
+    const kittens = [
+      "ai-kitten-dancing-kitten.webp",
+      "angry-cat.gif",
+      "cat-dance-cat (1).webp",
+      "cat-dance-cat.webp",
+      "cat-smile.webp",
+      "kitten-stare.gif",
+      "kitty-dance.webp",
+      "kitty.gif",
+      "sad.gif",
+      "scuba-scuba-cat.webp",
+      "sped-up-kiss-cute-cat-kitten-gif-6454201794369349769-cat.webp"
+    ];
+
+    const dudu = [
+      "a-y-r-ronaldito.gif",
+      "bibimbaobei-bububaobei.webp",
+      "bubu-dudu (1).webp",
+      "bubu-dudu (2).webp",
+      "bubu-dudu-car.webp",
+      "bubu-dudu-dudu.webp",
+      "bubu-dudu-hug.webp",
+      "bubu-dudu-sseeyall (1).webp",
+      "bubu-dudu-sseeyall.webp",
+      "bubu-dudu.webp",
+      "bubu-rub-bubu-love-dudu.webp",
+      "friday.webp"
+    ];
+
+    const kGrid = document.getElementById('kitten-grid');
+    kittens.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<img src="cute kitten/${encodeURIComponent(f)}"><div class="name">${f}</div>`;
+      kGrid.appendChild(card);
+    });
+
+    const dGrid = document.getElementById('dudu-grid');
+    dudu.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<img src="Dudu bubu/${encodeURIComponent(f)}"><div class="name">${f}</div>`;
+      dGrid.appendChild(card);
+    });
+  </script>
+<script src="../assets/js/cherishly-share-suite.js"></script>
+</body>
+</html>
