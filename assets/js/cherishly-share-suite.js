@@ -102,6 +102,20 @@
 
   // Forcibly close share modal if page is freshly visited (user didn't just generate in this session)
   function closeStuckModalsOnLoad() {
+    const isRecipient = window.location.search.includes('?d=') || 
+                        window.location.search.includes('?wish=') || 
+                        window.location.pathname.includes('/s/');
+
+    if (isRecipient) {
+      document.documentElement.setAttribute('data-om-recipient', '1');
+    } else {
+      document.documentElement.setAttribute('data-om-builder', '1');
+      // Forcibly suppress any broken/expired link cards on builder pages
+      document.querySelectorAll('.om-bday-expired, .om-anniv-expired, .om-gf-expired, .om-frnd-expired, .om-apol-expired, .om-puzz-expired, .om-surp-expired, [id$="-expired"], [class*="-expired"]').forEach(el => {
+        el.style.setProperty('display', 'none', 'important');
+      });
+    }
+
     if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')) {
       if (!sessionStorage.getItem('cherishly_just_generated')) {
         resetStickyOrderState();
@@ -139,6 +153,19 @@
   }, true);
 
   const css = `
+    /* Never show expired / broken-link screen while in builder mode */
+    html[data-om-builder] .om-bday-expired,
+    html[data-om-builder] .om-anniv-expired,
+    html[data-om-builder] .om-gf-expired,
+    html[data-om-builder] .om-frnd-expired,
+    html[data-om-builder] .om-apol-expired,
+    html[data-om-builder] .om-puzz-expired,
+    html[data-om-builder] .om-surp-expired,
+    html[data-om-builder] [id$="-expired"],
+    html[data-om-builder] [class*="-expired"] {
+      display: none !important;
+    }
+
     /* Modal Card Constraints */
     .om-bday-modal-sheet, .om-frnd-modal-card, .om-gf-modal-card,
     .om-apol-modal-card, .om-anniv-modal-card, .om-puzz-modal-card, .om-surp-modal-card,
@@ -470,8 +497,9 @@
         }
       }
 
-      if (!raw && category === 'girlfriend' && window.OM_GIRLFRIEND_DATA) {
-        const g = window.OM_GIRLFRIEND_DATA;
+      const gfData = window._omGfBuilderData || window.OM_GIRLFRIEND_DATA;
+      if (!raw && category === 'girlfriend' && gfData) {
+        const g = gfData;
         const d = {
           n: g.name || '',
           f: g.from || '',
@@ -799,37 +827,6 @@
         urlObserver.observe(urlEl, { characterData: true, childList: true, subtree: true });
       }
     }
-  };
-        showToast('📋 Link copied to clipboard!');
-      }).catch(() => {
-        prompt('Copy your link:', cleanUrl);
-      });
-    }
-
-    quickCopy.addEventListener('click', copyLink);
-    copyOnlyBtn.addEventListener('click', copyLink);
-
-    previewBtn.addEventListener('click', () => {
-      window.open(cleanUrl, '_blank');
-    });
-
-    waBtn.addEventListener('click', () => {
-      const fullText = getFullMessage(textareaEl.value);
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullText)}`, '_blank');
-    });
-
-    igBtn.addEventListener('click', async () => {
-      const fullText = getFullMessage(textareaEl.value);
-      try {
-        await navigator.clipboard.writeText(fullText);
-        showToast('💌 Message & Link Copied! Opening Instagram...');
-      } catch (e) {
-        showToast('💌 Ready to paste on Instagram!');
-      }
-      setTimeout(() => {
-        window.open('https://instagram.com/direct/inbox/', '_blank');
-      }, 600);
-    });
   };
 
   // ============================================================
