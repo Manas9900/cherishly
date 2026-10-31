@@ -105,10 +105,16 @@
     if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')) {
       if (!sessionStorage.getItem('cherishly_just_generated')) {
         resetStickyOrderState();
-        const modals = document.querySelectorAll('[id*="share-modal"], .om-anniv-modal, .om-bday-modal, .om-gf-modal, .om-apol-modal, .om-frnd-modal, .om-puzz-modal, .om-surp-modal, .om-sh2, .om-sh2-sheet');
-        modals.forEach(m => {
+        // ONLY target SHARE modals, NEVER unlock / payment modals!
+        const shareModals = document.querySelectorAll('[id$="-share-modal"], [id*="share-modal"], .om-sh2, .om-sh2-sheet');
+        shareModals.forEach(m => {
           m.classList.remove('is-open');
           m.style.display = 'none';
+        });
+        // Ensure all unlock / payment modals have clean display styles so they open when "Create the Link" is clicked!
+        const unlockModals = document.querySelectorAll('[id*="unlock-modal"], [class*="unlock-modal"], [id*="paywall"]');
+        unlockModals.forEach(m => {
+          m.style.display = '';
         });
       }
     }
@@ -117,6 +123,20 @@
   // Run immediately and after load
   closeStuckModalsOnLoad();
   window.addEventListener('DOMContentLoaded', closeStuckModalsOnLoad);
+
+  // Bulletproof global click listener for "Create the Link" button across all templates
+  document.addEventListener('click', function (e) {
+    const genBtn = e.target.closest('#om-anniv-generate-btn, #om-bday-generate-btn, #om-gf-generate-btn, #om-frnd-generate-btn, #om-apol-generate-btn, #om-puzz-generate-btn, #om-surp-generate-btn, [id*="generate-btn"], button[id*="generate"], .om-cinema-bar button, .om-anniv-btn[id*="generate"]');
+    if (genBtn) {
+      // Find the unlock/payment modal on the current page
+      const unlockModal = document.querySelector('#om-anniv-unlock-modal, #om-bday-unlock-modal, #om-gf-unlock-modal, #om-frnd-unlock-modal, #om-apol-unlock-modal, #om-puzz-unlock-modal, #om-surp-unlock-modal, [id*="unlock-modal"], [class*="unlock-modal"], [id*="paywall"]');
+      if (unlockModal) {
+        unlockModal.style.display = 'flex';
+        unlockModal.classList.add('is-open');
+        injectAdminIntoModals();
+      }
+    }
+  }, true);
 
   const css = `
     /* Modal Card Constraints */

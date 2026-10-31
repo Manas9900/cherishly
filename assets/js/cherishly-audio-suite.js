@@ -587,6 +587,13 @@
       recWave.classList.remove('is-live');
 
       if (options.onDelete) options.onDelete();
+
+      // Clear draft hash so refreshing will not reload deleted audio
+      if (window.location.hash && window.location.hash.includes('#draft=')) {
+        try {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {}
+      }
     });
 
     // --- MediaRecorder Recording Logic ---

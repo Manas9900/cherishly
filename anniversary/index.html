@@ -779,11 +779,15 @@ var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof H
     var songInput = document.getElementById('om-anniv-song-input');
     var songLinkBtn = document.getElementById('om-anniv-songlink');
 
-    // Retrieve initial audio if previously saved
+    // Retrieve initial audio only if continuing an active draft
     var initial = null;
     try {
-      var saved = localStorage.getItem('OM_ANNIV_VOICE');
-      if (saved) initial = JSON.parse(saved);
+      if (window.location.hash && window.location.hash.includes('#draft=')) {
+        var saved = localStorage.getItem('OM_ANNIV_VOICE');
+        if (saved) initial = JSON.parse(saved);
+      } else {
+        localStorage.removeItem('OM_ANNIV_VOICE');
+      }
     } catch(e) {}
 
     // Builder integration
@@ -805,6 +809,53 @@ var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof H
             songInput.value = '';
             songInput.dispatchEvent(new Event('input', { bubbles: true }));
           }
+          if (window.location.hash && window.location.hash.includes('#draft=')) {
+            try {
+              history.replaceState(null, '', window.location.pathname + window.location.search);
+            } catch(e) {}
+          }
+        }
+      });
+    }
+
+    // Background music player for Preview & Recipient views
+    function playBackgroundMusic() {
+      var bgAudio = document.getElementById('om-anniv-bgm');
+      if (!bgAudio) {
+        bgAudio = document.createElement('audio');
+        bgAudio.id = 'om-anniv-bgm';
+        bgAudio.loop = true;
+        bgAudio.volume = 0.45;
+        document.body.appendChild(bgAudio);
+      }
+      var path = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '') + '/music.mp3';
+      if (!bgAudio.src || !bgAudio.src.includes('music.mp3')) {
+        bgAudio.src = path;
+      }
+      if (bgAudio.paused) {
+        var p = bgAudio.play();
+        if (p && p.catch) {
+          p.catch(function() {
+            var unlock = function() {
+              bgAudio.play().catch(function() {});
+              document.removeEventListener('click', unlock, true);
+              document.removeEventListener('touchstart', unlock, true);
+            };
+            document.addEventListener('click', unlock, true);
+            document.addEventListener('touchstart', unlock, true);
+          });
+        }
+      }
+    }
+
+    var muteBtn = document.getElementById('om-anniv-mute');
+    if (muteBtn && !muteBtn._omHooked) {
+      muteBtn._omHooked = true;
+      muteBtn.addEventListener('click', function() {
+        var bg = document.getElementById('om-anniv-bgm');
+        if (bg) {
+          bg.muted = !bg.muted;
+          muteBtn.textContent = bg.muted ? '🔇' : '🔊';
         }
       });
     }
@@ -851,18 +902,25 @@ var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof H
       var stageObs = new MutationObserver(function() {
         if (stageEl.offsetParent !== null || stageEl.classList.contains('is-shown')) {
           renderShowcaseIfReady();
+          playBackgroundMusic();
         }
       });
       stageObs.observe(stageEl, { attributes: true, attributeFilter: ['class', 'style'] });
     }
 
     // Also run on preview click
-    document.querySelectorAll('[id*="preview"], [class*="preview"], #om-anniv-step6-next').forEach(function(el) {
+    document.querySelectorAll('[id*="preview"], [class*="preview"], #om-anniv-step6-next, #om-anniv-gate-btn, #om-anniv-peek').forEach(function(el) {
       el.addEventListener('click', function() {
-        setTimeout(renderShowcaseIfReady, 600);
+        setTimeout(function() {
+          renderShowcaseIfReady();
+          playBackgroundMusic();
+        }, 300);
       });
     });
 
+    if (window.location.search && (window.location.search.includes('?d=') || window.location.search.includes('?wish='))) {
+      playBackgroundMusic();
+    }
     renderShowcaseIfReady();
   }
 
