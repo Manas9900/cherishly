@@ -79,6 +79,24 @@
           }
         }
       });
+      // Also scrub any internal template order recovery tokens
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('om_') || key.includes('order') || key.includes('paid') || key.includes('recover'))) {
+          try {
+            const val = localStorage.getItem(key);
+            if (val && (val.includes('"status"') || val.includes('"order"') || val.includes('"pid"'))) {
+              localStorage.removeItem(key);
+            }
+          } catch (e) {}
+        }
+      }
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i);
+        if (key && (key.startsWith('om_') || key.includes('order') || key.includes('paid'))) {
+          sessionStorage.removeItem(key);
+        }
+      }
     } catch (e) {}
   }
 
@@ -87,12 +105,10 @@
     if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')) {
       if (!sessionStorage.getItem('cherishly_just_generated')) {
         resetStickyOrderState();
-        const modals = document.querySelectorAll('.om-anniv-modal, .om-bday-modal, .om-gf-modal, .om-apol-modal, .om-frnd-modal, .om-puzz-modal, .om-surp-modal');
+        const modals = document.querySelectorAll('[id*="share-modal"], .om-anniv-modal, .om-bday-modal, .om-gf-modal, .om-apol-modal, .om-frnd-modal, .om-puzz-modal, .om-surp-modal, .om-sh2, .om-sh2-sheet');
         modals.forEach(m => {
-          if (m.id && m.id.includes('share-modal')) {
-            m.classList.remove('is-open');
-            m.style.display = 'none';
-          }
+          m.classList.remove('is-open');
+          m.style.display = 'none';
         });
       }
     }
@@ -377,16 +393,32 @@
   }
 
   function resolveWorkingShareUrl(candidateUrl) {
-    // ALWAYS PREFER direct recipient payload link because it directly opens the surprise
-    const directUrl = buildDirectRecipientUrl();
-    if (directUrl) return directUrl;
-
     let url = candidateUrl ? String(candidateUrl).trim() : '';
+
+    // Fix any Cherishly.live domain to current window origin
+    if (url.includes('Cherishly.live') || url.includes('cherishly.live')) {
+      url = url.replace(/https?:\/\/[a-zA-Z0-9.-]*cherishly\.live/i, window.location.origin);
+    }
+
     if (url.startsWith('/s/')) {
       url = window.location.origin + url;
     } else if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
       url = window.location.origin + (url.startsWith('/') ? url : '/' + url);
     }
+
+    // If candidateUrl already has ?d=, prefer it with the right origin
+    if (url && url.includes('?d=')) {
+      return url;
+    }
+
+    // If candidateUrl is a short link, prefer it
+    if (url && url.includes('/s/')) {
+      return url;
+    }
+
+    // Fall back to direct recipient payload link built from draft
+    const directUrl = buildDirectRecipientUrl();
+    if (directUrl) return directUrl;
 
     return url || window.location.href;
   }
@@ -416,7 +448,16 @@
     if (modalParent) {
       const ticketUrlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url-display"]');
       if (ticketUrlEl) {
-        ticketUrlEl.textContent = cleanUrl;
+        if (cleanUrl.includes('/s/')) {
+          ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
+        } else if (cleanUrl.includes('?d=')) {
+          // Neat shortened preview so ticket box doesn't overflow with raw base64
+          const displayPart = cleanUrl.replace(/^https?:\/\//, '').replace(/\?d=.*$/, '/?d=...') ;
+          ticketUrlEl.textContent = displayPart;
+        } else {
+          ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
+        }
+        ticketUrlEl.title = cleanUrl;
       }
       const ticketTitleEl = modalParent.querySelector('.om-sh2-h, [id*="share-title"]');
       if (ticketTitleEl) {
@@ -425,6 +466,27 @@
       const ticketSubEl = modalParent.querySelector('.om-sh2-lab');
       if (ticketSubEl) {
         ticketSubEl.textContent = 'GIFT LINK';
+      }
+
+      // Update all validity references to 14 days
+      modalParent.querySelectorAll('*').forEach(el => {
+        if (el.children.length === 0 && (el.textContent.includes('3 months') || el.textContent.includes('30 days') || el.textContent.includes('90 days'))) {
+          el.textContent = el.textContent
+            .replace(/3\s*months/gi, '14 days')
+            .replace(/30\s*days/gi, '14 days')
+            .replace(/90\s*days/gi, '14 days');
+        }
+      });
+
+      // Hook ticket click to copy cleanUrl
+      const ticketCard = modalParent.querySelector('.om-sh2-tk');
+      if (ticketCard && !ticketCard._omHooked) {
+        ticketCard._omHooked = true;
+        ticketCard.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          copyLink();
+        });
       }
 
       // Hook "+ Create another gift" or close buttons
