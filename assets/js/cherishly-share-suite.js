@@ -158,29 +158,50 @@
     .om-share-suite-active .om-anniv-share-btns,
     .om-share-suite-active .om-frnd-share-row,
     .om-share-suite-active .om-gf-share-row,
+    .om-share-suite-active .om-gf-midnight,
     .om-share-suite-active .om-bday-share-url,
-    .om-share-suite-active .om-bday-modal-note {
+    .om-share-suite-active .om-bday-modal-note,
+    .om-share-suite-active .om-sh2-wa,
+    .om-share-suite-active .om-sh2-cp,
+    .om-share-suite-active .om-sh2-btns,
+    .om-share-suite-active .om-puzz-share-btns,
+    .om-share-suite-active .om-surp-share-btns {
       display: none !important;
     }
 
-    /* Ultra-Compact Share Suite Styling */
-    .om-share-suite {
-      margin-top: 10px;
-      text-align: left;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    /* Bulletproof immunity against template hiding scripts (data-omsh-hide) */
+    .om-share-suite,
+    .om-share-suite.om-sh2-fix,
+    [data-omsh-hide].om-share-suite,
+    .om-share-suite[data-omsh-hide],
+    #om-gf-share-modal .om-share-suite,
+    #om-anniv-share-modal .om-share-suite,
+    #om-bday-share-modal .om-share-suite,
+    #om-apol-share-modal .om-share-suite,
+    #om-frnd-share-modal .om-share-suite,
+    #om-puzz-share-modal .om-share-suite,
+    #om-surp-share-modal .om-share-suite {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      margin-top: 10px !important;
+      text-align: left !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
-    .om-share-suite * { box-sizing: border-box; }
+    .om-share-suite * { box-sizing: border-box !important; visibility: visible !important; }
 
     /* Compact Link Bar */
-    .om-ss-link-bar {
-      display: flex;
+    .om-share-suite .om-ss-link-bar {
+      display: flex !important;
       align-items: center;
       justify-content: space-between;
       background: #FFF5F7;
       border: 1.5px dashed #FFCCD7;
       border-radius: 12px;
       padding: 6px 10px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       gap: 8px;
     }
     .om-ss-link-text {
@@ -206,6 +227,19 @@
     }
     .om-ss-copy-badge:active { opacity: 0.8; }
 
+    /* 14 Days Validity Badge */
+    .om-ss-validity-badge {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #795548;
+      margin-bottom: 10px;
+      opacity: 0.88;
+    }
+
     /* Preset Chips */
     .om-ss-chips-label {
       font-size: 11px;
@@ -214,7 +248,7 @@
       letter-spacing: 0.04em;
       color: #795548;
       margin-bottom: 6px;
-      display: flex;
+      display: flex !important;
       justify-content: space-between;
     }
     .om-ss-chips-label small {
@@ -222,8 +256,8 @@
       color: #9E7D73;
       text-transform: none;
     }
-    .om-ss-chips {
-      display: flex;
+    .om-share-suite .om-ss-chips {
+      display: flex !important;
       gap: 6px;
       overflow-x: auto;
       padding-bottom: 6px;
@@ -273,8 +307,8 @@
     }
 
     /* Action Buttons Row */
-    .om-ss-actions {
-      display: grid;
+    .om-share-suite .om-ss-actions {
+      display: grid !important;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       margin-bottom: 8px;
@@ -305,8 +339,8 @@
     }
 
     /* Bottom Preview / Link Only */
-    .om-ss-footer-row {
-      display: flex;
+    .om-share-suite .om-ss-footer-row {
+      display: flex !important;
       gap: 8px;
     }
     .om-ss-footer-btn {
@@ -374,6 +408,26 @@
   function buildDirectRecipientUrl() {
     try {
       const category = detectCategory();
+
+      // 1. If girlfriend template has dedicated helper:
+      if (category === 'girlfriend') {
+        if (typeof window._omGfGetDirectUrl === 'function') {
+          const u = window._omGfGetDirectUrl();
+          if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
+        }
+      }
+
+      // 2. If page hash has #draft=... (e.g. preview mode)
+      if (window.location.hash && window.location.hash.includes('#draft=')) {
+        const payload = window.location.hash.split('#draft=')[1].split('&')[0];
+        if (payload && payload.length > 10) {
+          let path = window.location.pathname.replace(/\/index\.html$/, '');
+          if (!path.endsWith('/')) path += '/';
+          return `${window.location.origin}${path}?d=${payload}`;
+        }
+      }
+
+      // 3. Check localStorage for template data
       const storageKey = 'OM_' + category.toUpperCase() + '_DATA';
       let raw = localStorage.getItem(storageKey);
       if (!raw) {
@@ -384,6 +438,35 @@
           }
         }
       }
+
+      if (!raw && category === 'girlfriend' && window.OM_GIRLFRIEND_DATA) {
+        const g = window.OM_GIRLFRIEND_DATA;
+        const d = {
+          n: g.name || '',
+          f: g.from || '',
+          k: g.kind || 'gf',
+          v: g.vibe || '',
+          o: g.occasion || '',
+          g: '3',
+          sl: g.seal || '',
+          st: g.sticker || '',
+          vo: g.voiceUrl || '',
+          sd: g.since || '',
+          rs: Array.isArray(g.notes) ? g.notes : [],
+          p: Array.isArray(g.photos) ? g.photos : [],
+          lt: g.msg || '',
+          t: Date.now()
+        };
+        const jsonStr = JSON.stringify(d);
+        const b64 = btoa(unescape(encodeURIComponent(jsonStr)))
+          .replace(/\+/g, '-')
+          .split('/').join('_')
+          .replace(/=+$/, '');
+        let path = window.location.pathname.replace(/\/index\.html$/, '');
+        if (!path.endsWith('/')) path += '/';
+        return `${window.location.origin}${path}?d=${b64}`;
+      }
+
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       const data = JSON.parse(JSON.stringify(parsed));
@@ -415,6 +498,14 @@
   function resolveWorkingShareUrl(candidateUrl) {
     let url = candidateUrl ? String(candidateUrl).trim() : '';
 
+    let path = window.location.pathname.replace(/\/index\.html$/, '');
+    if (!path.endsWith('/')) path += '/';
+
+    // If candidateUrl is raw base64 payload (e.g. starts with eyJ or wiZn or raw string without / or ?)
+    if (url && !url.includes('/') && !url.includes('?') && url.length > 20) {
+      return `${window.location.origin}${path}?d=${url}`;
+    }
+
     // Fix any Cherishly.live domain to current window origin
     if (url.includes('Cherishly.live') || url.includes('cherishly.live')) {
       url = url.replace(/https?:\/\/[a-zA-Z0-9.-]*cherishly\.live/i, window.location.origin);
@@ -440,7 +531,7 @@
     const directUrl = buildDirectRecipientUrl();
     if (directUrl) return directUrl;
 
-    return url || window.location.href;
+    return url || (window.location.origin + path);
   }
 
   window.initCherishlyShareSuite = function (container, currentShareUrl) {
@@ -452,109 +543,43 @@
 
     // Mark parent modal card as active suite to hide legacy duplicate buttons
     container.classList.add('om-share-suite-active');
-    const modalParent = container.closest('.om-frnd-modal, .om-bday-modal, .om-gf-modal, .om-apol-modal, .om-anniv-modal, .om-puzz-modal, .om-surp-modal');
+    const modalParent = container.closest('.om-frnd-modal, .om-bday-modal, .om-gf-modal, .om-apol-modal, .om-anniv-modal, .om-puzz-modal, .om-surp-modal, [id*="-share-modal"]');
     if (modalParent) {
       modalParent.classList.add('om-share-suite-active');
       modalParent.style.display = 'flex';
+      modalParent.classList.add('is-open');
+
+      // Unhide header/title elements in modalParent that template scripts might have hidden
+      modalParent.querySelectorAll('.om-gf-modal-h, .om-gf-modal-s, [class*="modal-h"], [class*="modal-s"]').forEach(el => {
+        el.removeAttribute('data-omsh-hide');
+      });
     }
 
     const category = detectCategory();
     const presets = PRESETS_BY_CATEGORY[category] || PRESETS_BY_CATEGORY.birthday;
     let selectedPreset = presets[0];
 
-    const cleanUrl = resolveWorkingShareUrl(currentShareUrl);
-
-    // Update parent ticket elements if present (e.g. .om-sh2)
-    if (modalParent) {
-      const ticketUrlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url-display"]');
-      if (ticketUrlEl) {
-        if (cleanUrl.includes('/s/')) {
-          ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
-        } else if (cleanUrl.includes('?d=')) {
-          // Neat shortened preview so ticket box doesn't overflow with raw base64
-          const displayPart = cleanUrl.replace(/^https?:\/\//, '').replace(/\?d=.*$/, '/?d=...') ;
-          ticketUrlEl.textContent = displayPart;
-        } else {
-          ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
-        }
-        ticketUrlEl.title = cleanUrl;
-      }
-      const ticketTitleEl = modalParent.querySelector('.om-sh2-h, [id*="share-title"]');
-      if (ticketTitleEl) {
-        ticketTitleEl.textContent = 'The surprise is ready! ✨';
-      }
-      const ticketSubEl = modalParent.querySelector('.om-sh2-lab');
-      if (ticketSubEl) {
-        ticketSubEl.textContent = 'GIFT LINK';
-      }
-
-      // Update all validity references to 14 days
-      modalParent.querySelectorAll('*').forEach(el => {
-        if (el.children.length === 0 && (el.textContent.includes('3 months') || el.textContent.includes('30 days') || el.textContent.includes('90 days'))) {
-          el.textContent = el.textContent
-            .replace(/3\s*months/gi, '14 days')
-            .replace(/30\s*days/gi, '14 days')
-            .replace(/90\s*days/gi, '14 days');
-        }
-      });
-
-      // Hook ticket click to copy cleanUrl
-      const ticketCard = modalParent.querySelector('.om-sh2-tk');
-      if (ticketCard && !ticketCard._omHooked) {
-        ticketCard._omHooked = true;
-        ticketCard.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          copyLink();
-        });
-      }
-
-      // Hook "+ Create another gift" or close buttons
-      const anotherBtns = modalParent.querySelectorAll('.om-sh2-btn-gh, [data-close-modal], [data-close], .om-anniv-unlock-close, .om-bday-modal-close, .om-pw2-x');
-      anotherBtns.forEach(btn => {
-        if (!btn._omHooked) {
-          btn._omHooked = true;
-          btn.addEventListener('click', () => {
-            resetStickyOrderState();
-            modalParent.classList.remove('is-open');
-            modalParent.style.display = 'none';
-          });
-        }
-      });
-
-      // Override top ticket copy/whatsapp buttons so they always copy the full cleanUrl
-      const topCpBtn = modalParent.querySelector('.om-sh2-cp');
-      if (topCpBtn && !topCpBtn._omHooked) {
-        topCpBtn._omHooked = true;
-        topCpBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          copyLink();
-        }, true);
-      }
-      const topWaBtn = modalParent.querySelector('.om-sh2-wa');
-      if (topWaBtn && !topWaBtn._omHooked) {
-        topWaBtn._omHooked = true;
-        topWaBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const textareaEl = container.querySelector('#om-ss-text');
-          const msg = textareaEl ? getFullMessage(textareaEl.value) : `Open your surprise here: ${cleanUrl}`;
-          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-        }, true);
-      }
-    }
+    let cleanUrl = resolveWorkingShareUrl(currentShareUrl);
 
     function getFullMessage(text) {
-      return `${text.trim()} \n\n👉 Open here: ${cleanUrl}`;
+      return `${text.trim()}\n\n👉 Open here: ${cleanUrl}`;
     }
 
     const suiteWrap = document.createElement('div');
-    suiteWrap.className = 'om-share-suite';
+    suiteWrap.className = 'om-share-suite om-sh2-fix';
+    suiteWrap.setAttribute('data-omsh-fix', '1');
+    suiteWrap.removeAttribute('data-omsh-hide');
+
     suiteWrap.innerHTML = `
       <div class="om-ss-link-bar">
         <span class="om-ss-link-text">${cleanUrl}</span>
         <button class="om-ss-copy-badge" id="om-ss-quick-copy" type="button">Copy</button>
+      </div>
+
+      <div class="om-ss-validity-badge">
+        <span>🕒 Valid for 14 days</span>
+        <span>•</span>
+        <span>∞ Unlimited opens</span>
       </div>
 
       <div class="om-ss-chips-label">
@@ -584,8 +609,95 @@
       </div>
     `;
 
+    // Ensure suiteWrap is inserted into container
     container.appendChild(suiteWrap);
 
+    // Watch for template attempting to set data-omsh-hide on suiteWrap
+    const hideGuard = new MutationObserver(() => {
+      if (suiteWrap.hasAttribute('data-omsh-hide')) {
+        suiteWrap.removeAttribute('data-omsh-hide');
+      }
+    });
+    hideGuard.observe(suiteWrap, { attributes: true, attributeFilter: ['data-omsh-hide'] });
+
+    function updateUrlAcrossUI(newCandidateUrl) {
+      cleanUrl = resolveWorkingShareUrl(newCandidateUrl);
+
+      // Update link bar
+      const barText = suiteWrap.querySelector('.om-ss-link-text');
+      if (barText) barText.textContent = cleanUrl;
+
+      // Update textarea with current preset
+      const ta = suiteWrap.querySelector('#om-ss-text');
+      if (ta) ta.value = getFullMessage(selectedPreset.text);
+
+      // Update parent ticket elements if present (e.g. .om-sh2)
+      if (modalParent) {
+        const ticketUrlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url-display"]');
+        if (ticketUrlEl) {
+          if (cleanUrl.includes('/s/')) {
+            ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
+          } else if (cleanUrl.includes('?d=')) {
+            const displayPart = cleanUrl.replace(/^https?:\/\//, '').replace(/\?d=.*$/, '/?d=...');
+            ticketUrlEl.textContent = displayPart;
+          } else {
+            ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
+          }
+          ticketUrlEl.title = cleanUrl;
+        }
+      }
+    }
+
+    // Sanitize any validity text in parent modal to 14 days
+    if (modalParent) {
+      const ticketUrlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url-display"]');
+      if (ticketUrlEl) {
+        if (cleanUrl.includes('/s/')) {
+          ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
+        } else if (cleanUrl.includes('?d=')) {
+          const displayPart = cleanUrl.replace(/^https?:\/\//, '').replace(/\?d=.*$/, '/?d=...');
+          ticketUrlEl.textContent = displayPart;
+        } else {
+          ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
+        }
+        ticketUrlEl.title = cleanUrl;
+      }
+
+      modalParent.querySelectorAll('*').forEach(el => {
+        if (el.children.length === 0 && (el.textContent.includes('3 months') || el.textContent.includes('30 days') || el.textContent.includes('90 days'))) {
+          el.textContent = el.textContent
+            .replace(/3\s*months/gi, '14 days')
+            .replace(/30\s*days/gi, '14 days')
+            .replace(/90\s*days/gi, '14 days');
+        }
+      });
+
+      // Hook ticket click to copy cleanUrl
+      const ticketCard = modalParent.querySelector('.om-sh2-tk');
+      if (ticketCard && !ticketCard._omHooked) {
+        ticketCard._omHooked = true;
+        ticketCard.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          copyLink();
+        });
+      }
+
+      // Hook "+ Create another gift" or close buttons
+      const anotherBtns = modalParent.querySelectorAll('.om-sh2-btn-gh, #om-gf-share-another, [data-close-modal], [data-close], .om-anniv-unlock-close, .om-bday-modal-close, .om-pw2-x');
+      anotherBtns.forEach(btn => {
+        if (!btn._omHooked) {
+          btn._omHooked = true;
+          btn.addEventListener('click', () => {
+            resetStickyOrderState();
+            modalParent.classList.remove('is-open');
+            modalParent.style.display = 'none';
+          });
+        }
+      });
+    }
+
+    // Populate chips & actions
     const chipsEl = suiteWrap.querySelector('#om-ss-chips');
     const textareaEl = suiteWrap.querySelector('#om-ss-text');
     const waBtn = suiteWrap.querySelector('#om-ss-btn-wa');
@@ -594,7 +706,6 @@
     const copyOnlyBtn = suiteWrap.querySelector('#om-ss-btn-copy-only');
     const previewBtn = suiteWrap.querySelector('#om-ss-btn-preview');
 
-    // Populate chips
     presets.forEach((p, idx) => {
       const chip = document.createElement('button');
       chip.type = 'button';
@@ -604,16 +715,60 @@
         suiteWrap.querySelectorAll('.om-ss-chip').forEach(c => c.classList.remove('is-active'));
         chip.classList.add('is-active');
         selectedPreset = p;
-        textareaEl.value = p.text;
+        textareaEl.value = getFullMessage(p.text);
       });
       chipsEl.appendChild(chip);
     });
 
-    textareaEl.value = selectedPreset.text;
+    textareaEl.value = getFullMessage(selectedPreset.text);
 
-    // Actions
     function copyLink() {
       navigator.clipboard.writeText(cleanUrl).then(() => {
+        showToast('📋 Link copied to clipboard!');
+      }).catch(() => {
+        prompt('Copy your link:', cleanUrl);
+      });
+    }
+
+    quickCopy.addEventListener('click', copyLink);
+    copyOnlyBtn.addEventListener('click', copyLink);
+
+    previewBtn.addEventListener('click', () => {
+      window.open(cleanUrl, '_blank');
+    });
+
+    waBtn.addEventListener('click', () => {
+      const fullText = textareaEl.value;
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullText)}`, '_blank');
+    });
+
+    igBtn.addEventListener('click', async () => {
+      const fullText = textareaEl.value;
+      try {
+        await navigator.clipboard.writeText(fullText);
+        showToast('💌 Message & Link Copied! Opening Instagram...');
+      } catch (e) {
+        showToast('💌 Ready to paste on Instagram!');
+      }
+      setTimeout(() => {
+        window.open('https://instagram.com/direct/inbox/', '_blank');
+      }, 600);
+    });
+
+    // Observe urlEl to update cleanUrl if shortlink completes asynchronously
+    if (modalParent) {
+      const urlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url"], .om-share-url');
+      if (urlEl) {
+        const urlObserver = new MutationObserver(() => {
+          const text = (urlEl.textContent || '').trim();
+          if (text && !text.includes('Creating') && !text.includes('...') && text !== cleanUrl) {
+            updateUrlAcrossUI(text);
+          }
+        });
+        urlObserver.observe(urlEl, { characterData: true, childList: true, subtree: true });
+      }
+    }
+  };
         showToast('📋 Link copied to clipboard!');
       }).catch(() => {
         prompt('Copy your link:', cleanUrl);
@@ -1042,7 +1197,8 @@
       if (!modal) return;
 
       const observer = new MutationObserver(() => {
-        if (modal.classList.contains('is-open')) {
+        const isOpen = modal.classList.contains('is-open') || modal.style.display === 'flex' || modal.style.display === 'block';
+        if (isOpen) {
           // If not genuinely just generated in this session and builder page, close it
           if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=') && !sessionStorage.getItem('cherishly_just_generated')) {
             modal.classList.remove('is-open');
@@ -1073,7 +1229,7 @@
         }
       });
 
-      observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(modal, { attributes: true, attributeFilter: ['class', 'style'] });
     });
 
     // Also observe document body for dynamically added unlock payment modals
