@@ -399,7 +399,150 @@
     });
   };
 
+  // ============================================================
+  // CHERISHLY CREATOR / ADMIN TEST BYPASS (Ad Creation & Testing)
+  // ============================================================
+  function isAdmin() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.has('admin') || params.has('test') || params.has('skip') || params.has('demo') || params.has('creator') ||
+             localStorage.getItem('cherishly_admin_mode') === 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setAdmin(val) {
+    try {
+      if (val) {
+        localStorage.setItem('cherishly_admin_mode', 'true');
+        showToast('⚡ Admin Mode ON! Free test links enabled.');
+      } else {
+        localStorage.removeItem('cherishly_admin_mode');
+        showToast('Admin Mode OFF.');
+      }
+    } catch (e) {}
+  }
+
+  // Intercept Razorpay to support instantaneous free bypass when in admin mode
+  function wrapRazorpay() {
+    if (window._rzpWrapped) return;
+    if (typeof window.Razorpay !== 'function') {
+      setTimeout(wrapRazorpay, 200);
+      return;
+    }
+    window._rzpWrapped = true;
+    const OriginalRazorpay = window.Razorpay;
+
+    window.Razorpay = function (options) {
+      const instance = new OriginalRazorpay(options);
+      const originalOpen = instance.open.bind(instance);
+
+      instance.open = function () {
+        if (isAdmin()) {
+          console.log('[Cherishly Admin] Payment bypassed for testing/ad recording.');
+          showToast('⚡ Generating free test link...');
+          if (options && typeof options.handler === 'function') {
+            setTimeout(() => {
+              options.handler({
+                razorpay_payment_id: 'pay_admin_' + Date.now(),
+                razorpay_order_id: options.order_id || ('order_admin_' + Date.now()),
+                razorpay_signature: 'sig_admin_bypassed'
+              });
+            }, 350);
+            return;
+          }
+        }
+        return originalOpen();
+      };
+
+      return instance;
+    };
+  }
+
+  // Global console shortcut for testing
+  window.skipPayment = function () {
+    setAdmin(true);
+    const payBtn = document.querySelector('[id*="unlock-btn"], [id*="pay"], .om-pw2-btn, .om-pay-btn, button[class*="unlock"]');
+    if (payBtn) {
+      payBtn.click();
+    } else {
+      showToast('⚡ Admin Mode is ON. Proceed to checkout to get direct link!');
+    }
+  };
+  window.cherishlyAdmin = window.skipPayment;
+
+  function refreshAdminUI() {
+    document.querySelectorAll('.om-admin-bypass-btn').forEach(b => {
+      b.style.display = isAdmin() ? 'block' : 'none';
+    });
+  }
+
+  function injectAdminButtonIntoModal() {
+    const paywalls = document.querySelectorAll('[id*="unlock-modal"], [class*="unlock-modal"], [id*="paywall"]');
+    paywalls.forEach(modal => {
+      if (modal.querySelector('.om-admin-bypass-btn')) return;
+
+      const btn = modal.querySelector('button[id*="unlock"], button[class*="btn"], .om-pw2-btn');
+      if (!btn) return;
+
+      // Make title / logo triple-clickable to toggle admin mode easily on mobile
+      const title = modal.querySelector('h1, h2, h3, .om-pw2-tt, [class*="heading"]');
+      if (title && !title._hasAdminTap) {
+        title._hasAdminTap = true;
+        let tapCount = 0;
+        let tapTimer = null;
+        title.addEventListener('click', () => {
+          tapCount++;
+          clearTimeout(tapTimer);
+          tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
+          if (tapCount >= 3) {
+            tapCount = 0;
+            const newState = !isAdmin();
+            setAdmin(newState);
+            refreshAdminUI();
+          }
+        });
+      }
+
+      const bypassBtn = document.createElement('button');
+      bypassBtn.type = 'button';
+      bypassBtn.className = 'om-admin-bypass-btn';
+      bypassBtn.innerHTML = '⚡ Admin: Skip Payment &amp; Get Direct Link &rarr;';
+      bypassBtn.style.cssText = `
+        display: ${isAdmin() ? 'block' : 'none'};
+        width: 100%;
+        margin-top: 10px;
+        padding: 9px 14px;
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: #FFF;
+        border: none;
+        border-radius: 999px;
+        font-size: 11.5px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        transition: transform 0.15s ease;
+      `;
+
+      bypassBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setAdmin(true);
+        btn.click();
+      });
+
+      if (btn.parentNode) {
+        btn.parentNode.insertBefore(bypassBtn, btn.nextSibling);
+      }
+    });
+  }
+
   function observeModals() {
+    wrapRazorpay();
+    injectAdminButtonIntoModal();
+
     const modalIds = [
       'om-bday-share-modal',
       'om-gf-share-modal',
@@ -430,6 +573,12 @@
 
       observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
     });
+
+    // Also observe document body for dynamically added unlock modals
+    const bodyObserver = new MutationObserver(() => {
+      injectAdminButtonIntoModal();
+    });
+    bodyObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === 'loading') {
