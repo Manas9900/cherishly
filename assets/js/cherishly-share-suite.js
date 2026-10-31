@@ -400,31 +400,46 @@
   };
 
   // ============================================================
-  // CHERISHLY CREATOR / ADMIN TEST BYPASS (Ad Creation & Testing)
+  // SECURE ENCRYPTED ADMIN AUTHENTICATION (Single-Session Only)
   // ============================================================
+  const ADMIN_SESSION_KEY = 'cherishly_sec_admin_auth';
+  // Irreversible SHA-256 digests of valid admin credentials
+  const VALID_DIGESTS = [
+    'b9f619ef9cb17b740687933d1f2769c350a614a8def7f315a5eb601322ef13f0', // admin:Cherishly@Admin2026!
+    '0e11e01baca8d5d59476d4d5f77cd1cb95848175863a4b70bad86c3be7548a07'  // cherishly:Cherishly@Admin2026!
+  ];
+
+  async function sha256Hex(msg) {
+    if (window.crypto && window.crypto.subtle) {
+      const data = new TextEncoder().encode(msg);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    let hash = 0;
+    for (let i = 0; i < msg.length; i++) {
+      hash = ((hash << 5) - hash) + msg.charCodeAt(i);
+      hash |= 0;
+    }
+    return String(hash);
+  }
+
   function isAdmin() {
     try {
-      const params = new URLSearchParams(window.location.search);
-      return params.has('admin') || params.has('test') || params.has('skip') || params.has('demo') || params.has('creator') ||
-             localStorage.getItem('cherishly_admin_mode') === 'true';
+      return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'authenticated';
     } catch (e) {
       return false;
     }
   }
 
-  function setAdmin(val) {
+  function logoutAdmin() {
     try {
-      if (val) {
-        localStorage.setItem('cherishly_admin_mode', 'true');
-        showToast('⚡ Admin Mode ON! Free test links enabled.');
-      } else {
-        localStorage.removeItem('cherishly_admin_mode');
-        showToast('Admin Mode OFF.');
-      }
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      showToast('Admin logged out.');
+      refreshAdminUI();
     } catch (e) {}
   }
 
-  // Intercept Razorpay to support instantaneous free bypass when in admin mode
+  // Intercept Razorpay to support instantaneous bypass only when authenticated
   function wrapRazorpay() {
     if (window._rzpWrapped) return;
     if (typeof window.Razorpay !== 'function') {
@@ -440,16 +455,16 @@
 
       instance.open = function () {
         if (isAdmin()) {
-          console.log('[Cherishly Admin] Payment bypassed for testing/ad recording.');
-          showToast('⚡ Generating free test link...');
+          console.log('[Cherishly Admin] Authorized session: link generated.');
+          showToast('⚡ Generating admin test link...');
           if (options && typeof options.handler === 'function') {
             setTimeout(() => {
               options.handler({
-                razorpay_payment_id: 'pay_admin_' + Date.now(),
-                razorpay_order_id: options.order_id || ('order_admin_' + Date.now()),
-                razorpay_signature: 'sig_admin_bypassed'
+                razorpay_payment_id: 'pay_adm_' + Date.now(),
+                razorpay_order_id: options.order_id || ('order_adm_' + Date.now()),
+                razorpay_signature: 'sig_adm_authorized'
               });
-            }, 350);
+            }, 300);
             return;
           }
         }
@@ -460,88 +475,312 @@
     };
   }
 
-  // Global console shortcut for testing
-  window.skipPayment = function () {
-    setAdmin(true);
-    const payBtn = document.querySelector('[id*="unlock-btn"], [id*="pay"], .om-pw2-btn, .om-pay-btn, button[class*="unlock"]');
-    if (payBtn) {
-      payBtn.click();
-    } else {
-      showToast('⚡ Admin Mode is ON. Proceed to checkout to get direct link!');
-    }
-  };
-  window.cherishlyAdmin = window.skipPayment;
-
   function refreshAdminUI() {
+    const isAuthed = isAdmin();
     document.querySelectorAll('.om-admin-bypass-btn').forEach(b => {
-      b.style.display = isAdmin() ? 'block' : 'none';
+      b.style.display = isAuthed ? 'block' : 'none';
+    });
+    document.querySelectorAll('.om-admin-session-bar').forEach(b => {
+      b.style.display = isAuthed ? 'flex' : 'none';
+    });
+    document.querySelectorAll('.om-admin-trigger-wrap').forEach(b => {
+      b.style.display = isAuthed ? 'none' : 'block';
     });
   }
 
-  function injectAdminButtonIntoModal() {
+  // Construct and display the secure Admin Gateway Modal
+  function openAdminModal() {
+    let modal = document.getElementById('om-admin-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'om-admin-modal';
+      modal.innerHTML = `
+        <div class="om-adm-backdrop" style="
+          position: fixed;
+          inset: 0;
+          background: rgba(15, 12, 25, 0.72);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000000;
+          padding: 16px;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+        ">
+          <div class="om-adm-box" style="
+            width: 100%;
+            max-width: 360px;
+            background: #FFFFFF;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+            font-family: 'Outfit', -apple-system, system-ui, sans-serif;
+            text-align: left;
+            transform: scale(0.95);
+            transition: transform 0.25s ease;
+          ">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#FFF0F3;color:#E11D48;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+                <div>
+                  <h3 style="margin:0;font-size:16px;font-weight:700;color:#181829;">Admin Gateway</h3>
+                  <p style="margin:1px 0 0;font-size:11.5px;color:#8E8EA0;">Encrypted single-session access</p>
+                </div>
+              </div>
+              <button type="button" id="om-adm-close" style="background:none;border:none;font-size:22px;color:#A0A0B2;cursor:pointer;line-height:1;padding:4px;">&times;</button>
+            </div>
+
+            <form id="om-adm-form" style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:#4B4B60;margin-bottom:5px;">Admin ID</label>
+                <input type="text" id="om-adm-user" required autocomplete="off" placeholder="Enter Admin ID" style="
+                  width: 100%;
+                  box-sizing: border-box;
+                  padding: 10px 14px;
+                  border-radius: 12px;
+                  border: 1.5px solid #E5E7EB;
+                  font-size: 14px;
+                  color: #1F2937;
+                  background: #F9FAFB;
+                  outline: none;
+                  transition: border-color 0.2s;
+                " />
+              </div>
+
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:#4B4B60;margin-bottom:5px;">Password</label>
+                <input type="password" id="om-adm-pwd" required autocomplete="off" placeholder="Enter Password" style="
+                  width: 100%;
+                  box-sizing: border-box;
+                  padding: 10px 14px;
+                  border-radius: 12px;
+                  border: 1.5px solid #E5E7EB;
+                  font-size: 14px;
+                  color: #1F2937;
+                  background: #F9FAFB;
+                  outline: none;
+                  transition: border-color 0.2s;
+                " />
+              </div>
+
+              <div id="om-adm-err" style="display:none;color:#E11D48;font-size:12px;font-weight:600;background:#FFF1F2;padding:8px 12px;border-radius:8px;"></div>
+
+              <div style="display:flex;gap:8px;margin-top:6px;">
+                <button type="submit" id="om-adm-submit" style="
+                  flex: 1;
+                  padding: 11px;
+                  border-radius: 999px;
+                  border: none;
+                  background: linear-gradient(135deg, #FF3366 0%, #D81B60 100%);
+                  color: #FFF;
+                  font-size: 13.5px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.3);
+                ">Authenticate ⚡</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      const backdrop = modal.querySelector('.om-adm-backdrop');
+      const box = modal.querySelector('.om-adm-box');
+      const closeBtn = modal.querySelector('#om-adm-close');
+      const form = modal.querySelector('#om-adm-form');
+      const userIn = modal.querySelector('#om-adm-user');
+      const pwdIn = modal.querySelector('#om-adm-pwd');
+      const errBox = modal.querySelector('#om-adm-err');
+
+      function hide() {
+        backdrop.style.opacity = '0';
+        box.style.transform = 'scale(0.95)';
+        setTimeout(() => { modal.style.display = 'none'; }, 220);
+      }
+
+      closeBtn.addEventListener('click', hide);
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) hide();
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errBox.style.display = 'none';
+        const usr = (userIn.value || '').trim().toLowerCase();
+        const pwd = (pwdIn.value || '').trim();
+
+        if (!usr || !pwd) {
+          errBox.textContent = 'Please enter both ID and password.';
+          errBox.style.display = 'block';
+          return;
+        }
+
+        const digest = await sha256Hex(`${usr}:${pwd}`);
+        if (VALID_DIGESTS.includes(digest)) {
+          sessionStorage.setItem(ADMIN_SESSION_KEY, 'authenticated');
+          hide();
+          showToast('⚡ Admin Authenticated!');
+          refreshAdminUI();
+        } else {
+          errBox.textContent = 'Invalid credentials. Access denied.';
+          errBox.style.display = 'block';
+          pwdIn.value = '';
+          box.animate([
+            { transform: 'translateX(-6px)' },
+            { transform: 'translateX(6px)' },
+            { transform: 'translateX(-4px)' },
+            { transform: 'translateX(4px)' },
+            { transform: 'translateX(0)' }
+          ], { duration: 320 });
+        }
+      });
+    }
+
+    modal.style.display = 'block';
+    setTimeout(() => {
+      const backdrop = modal.querySelector('.om-adm-backdrop');
+      const box = modal.querySelector('.om-adm-box');
+      backdrop.style.opacity = '1';
+      box.style.transform = 'scale(1)';
+      const userIn = modal.querySelector('#om-adm-user');
+      if (userIn) userIn.focus();
+    }, 20);
+  }
+
+  // Inject Admin access trigger and bypass button into payment modals
+  function injectAdminIntoModals() {
     const paywalls = document.querySelectorAll('[id*="unlock-modal"], [class*="unlock-modal"], [id*="paywall"]');
     paywalls.forEach(modal => {
       if (modal.querySelector('.om-admin-bypass-btn')) return;
 
       const btn = modal.querySelector('button[id*="unlock"], button[class*="btn"], .om-pw2-btn');
-      if (!btn) return;
+      if (!btn || !btn.parentNode) return;
 
-      // Make title / logo triple-clickable to toggle admin mode easily on mobile
-      const title = modal.querySelector('h1, h2, h3, .om-pw2-tt, [class*="heading"]');
-      if (title && !title._hasAdminTap) {
-        title._hasAdminTap = true;
-        let tapCount = 0;
-        let tapTimer = null;
-        title.addEventListener('click', () => {
-          tapCount++;
-          clearTimeout(tapTimer);
-          tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
-          if (tapCount >= 3) {
-            tapCount = 0;
-            const newState = !isAdmin();
-            setAdmin(newState);
-            refreshAdminUI();
-          }
-        });
-      }
-
+      // 1. Prominent Admin Pass button (shown only when authenticated)
       const bypassBtn = document.createElement('button');
       bypassBtn.type = 'button';
       bypassBtn.className = 'om-admin-bypass-btn';
-      bypassBtn.innerHTML = '⚡ Admin: Skip Payment &amp; Get Direct Link &rarr;';
+      bypassBtn.innerHTML = '⚡ Admin: Generate Live Link (Free) &rarr;';
       bypassBtn.style.cssText = `
         display: ${isAdmin() ? 'block' : 'none'};
         width: 100%;
         margin-top: 10px;
-        padding: 9px 14px;
+        padding: 10px 14px;
         background: linear-gradient(135deg, #10B981 0%, #059669 100%);
         color: #FFF;
         border: none;
         border-radius: 999px;
-        font-size: 11.5px;
+        font-size: 12px;
         font-weight: 800;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.02em;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
         transition: transform 0.15s ease;
       `;
 
       bypassBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        setAdmin(true);
         btn.click();
       });
 
-      if (btn.parentNode) {
-        btn.parentNode.insertBefore(bypassBtn, btn.nextSibling);
-      }
+      // 2. Active admin indicator bar with Log Out
+      const sessionBar = document.createElement('div');
+      sessionBar.className = 'om-admin-session-bar';
+      sessionBar.style.cssText = `
+        display: ${isAdmin() ? 'flex' : 'none'};
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+        font-size: 11px;
+        color: #059669;
+        font-weight: 700;
+      `;
+      sessionBar.innerHTML = `
+        <span>● Admin Session Active</span>
+        <button type="button" class="om-admin-logout-btn" style="
+          background: none;
+          border: none;
+          color: #E11D48;
+          font-size: 11px;
+          font-weight: 700;
+          text-decoration: underline;
+          cursor: pointer;
+          padding: 0;
+        ">Log Out</button>
+      `;
+
+      sessionBar.querySelector('.om-admin-logout-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        logoutAdmin();
+      });
+
+      // 3. Subtle trigger link when not logged in
+      const triggerWrap = document.createElement('div');
+      triggerWrap.className = 'om-admin-trigger-wrap';
+      triggerWrap.style.cssText = `
+        display: ${isAdmin() ? 'none' : 'block'};
+        text-align: center;
+        margin-top: 12px;
+      `;
+      triggerWrap.innerHTML = `
+        <button type="button" class="om-admin-trigger-btn" style="
+          background: none;
+          border: none;
+          color: #9E9EA7;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          opacity: 0.75;
+          padding: 4px 8px;
+          border-radius: 6px;
+          transition: opacity 0.2s;
+        ">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Admin Login
+        </button>
+      `;
+
+      triggerWrap.querySelector('.om-admin-trigger-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openAdminModal();
+      });
+
+      btn.parentNode.insertBefore(bypassBtn, btn.nextSibling);
+      btn.parentNode.insertBefore(sessionBar, bypassBtn.nextSibling);
+      btn.parentNode.appendChild(triggerWrap);
     });
+
+    // Also inject subtle lock icon into page footer
+    const footerBase = document.querySelector('.omh-fbase, footer .omh-fbase');
+    if (footerBase && !footerBase.querySelector('.om-admin-ft-lock')) {
+      const lockLink = document.createElement('a');
+      lockLink.href = '#';
+      lockLink.className = 'om-admin-ft-lock';
+      lockLink.title = 'Admin';
+      lockLink.style.cssText = 'display:inline-block;margin-left:8px;color:#9a9ab3;opacity:0.4;vertical-align:middle;';
+      lockLink.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+      lockLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        openAdminModal();
+      });
+      footerBase.appendChild(lockLink);
+    }
   }
 
   function observeModals() {
     wrapRazorpay();
-    injectAdminButtonIntoModal();
+    injectAdminIntoModals();
 
     const modalIds = [
       'om-bday-share-modal',
@@ -576,7 +815,7 @@
 
     // Also observe document body for dynamically added unlock modals
     const bodyObserver = new MutationObserver(() => {
-      injectAdminButtonIntoModal();
+      injectAdminIntoModals();
     });
     bodyObserver.observe(document.body, { childList: true, subtree: true });
   }
