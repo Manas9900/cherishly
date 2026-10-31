@@ -1,6 +1,26 @@
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
+	<script>
+	(function(){
+		if(!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')){
+			try{
+				['OM_ANNIVERSARY_DATA','OM_GIRLFRIEND_DATA','OM_BIRTHDAY_DATA','OM_FRIENDSHIP_DATA','OM_APOLOGY_DATA','OM_PUZZLE_DATA','OM_SURPRISE_DATA'].forEach(function(k){
+					var raw = localStorage.getItem(k);
+					if(raw){
+						var d = JSON.parse(raw);
+						if(d && (d.paid || d.createInFlight)){
+							d.paid = false;
+							d.createInFlight = false;
+							d.code = '';
+							localStorage.setItem(k, JSON.stringify(d));
+						}
+					}
+				});
+			}catch(e){}
+		}
+	})();
+	</script>
 	<meta charset="UTF-8">
 		<title>Create a Love Surprise 💍 | Cherishly</title>
 <meta name='robots' content='max-image-preview:large' />

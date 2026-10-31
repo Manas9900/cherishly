@@ -3,7 +3,7 @@
  * Optimized to fit 100% on any mobile screen without cutting out.
  * Features:
  * - Single encrypted Admin access strictly inside the checkout/payment popup modal
- * - Robust full working URL generation (both short /s/ link and direct recipient ?d= payload)
+ * - Direct, 100% working recipient link generation (?d= payload) that opens the surprise directly
  * - Automatic prevention of sticky share modal on fresh builder page visits
  * - 1-tap presets and native sharing for WhatsApp & Instagram
  */
@@ -51,12 +51,13 @@
     for (const cat of Object.keys(PRESETS_BY_CATEGORY)) {
       if (path.includes('/' + cat)) return cat;
     }
-    return 'birthday';
+    return 'anniversary';
   }
 
-  // Prevent sticky auto-open of share modal on builder visits
-  if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')) {
+  // Clear sticky flags so reopening website does not auto-pop the share modal
+  function resetStickyOrderState() {
     try {
+      sessionStorage.removeItem('cherishly_just_generated');
       const allKeys = [
         'OM_ANNIVERSARY_DATA',
         'OM_GIRLFRIEND_DATA',
@@ -70,7 +71,7 @@
         const item = localStorage.getItem(k);
         if (item) {
           const parsed = JSON.parse(item);
-          if (parsed && parsed.paid) {
+          if (parsed) {
             parsed.paid = false;
             parsed.code = '';
             parsed.createInFlight = false;
@@ -80,6 +81,26 @@
       });
     } catch (e) {}
   }
+
+  // Forcibly close share modal if page is freshly visited (user didn't just generate in this session)
+  function closeStuckModalsOnLoad() {
+    if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')) {
+      if (!sessionStorage.getItem('cherishly_just_generated')) {
+        resetStickyOrderState();
+        const modals = document.querySelectorAll('.om-anniv-modal, .om-bday-modal, .om-gf-modal, .om-apol-modal, .om-frnd-modal, .om-puzz-modal, .om-surp-modal');
+        modals.forEach(m => {
+          if (m.id && m.id.includes('share-modal')) {
+            m.classList.remove('is-open');
+            m.style.display = 'none';
+          }
+        });
+      }
+    }
+  }
+
+  // Run immediately and after load
+  closeStuckModalsOnLoad();
+  window.addEventListener('DOMContentLoaded', closeStuckModalsOnLoad);
 
   const css = `
     /* Modal Card Constraints */
@@ -313,7 +334,7 @@
     t._timer = setTimeout(() => t.classList.remove('is-show'), 2400);
   }
 
-  // Construct URL-safe Base64 direct recipient payload
+  // Construct URL-safe Base64 direct recipient payload (?d=...)
   function buildDirectRecipientUrl() {
     try {
       const category = detectCategory();
@@ -338,6 +359,9 @@
       delete data.createInFlight;
       delete data.shareUrl;
 
+      // Ensure minimal required fields for the template to recognize it
+      if (!data.n && !data.name && !data.f && !data.from && !data.lt) return null;
+
       const jsonStr = JSON.stringify(data);
       const b64 = btoa(unescape(encodeURIComponent(jsonStr)))
         .replace(/\+/g, '-')
@@ -353,55 +377,18 @@
   }
 
   function resolveWorkingShareUrl(candidateUrl) {
-    let url = candidateUrl ? String(candidateUrl).trim() : '';
+    // ALWAYS PREFER direct recipient payload link because it directly opens the surprise
+    const directUrl = buildDirectRecipientUrl();
+    if (directUrl) return directUrl;
 
-    // If it's a relative slug like /s/0sehebwkbf
+    let url = candidateUrl ? String(candidateUrl).trim() : '';
     if (url.startsWith('/s/')) {
       url = window.location.origin + url;
     } else if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
       url = window.location.origin + (url.startsWith('/') ? url : '/' + url);
     }
 
-    // Direct recipient payload URL as reliable fallback/primary
-    const directUrl = buildDirectRecipientUrl();
-
-    if (!url || url.includes('Creating') || url === window.location.href) {
-      if (directUrl) return directUrl;
-    }
-
-    // If candidate has a valid short link, verify origin
-    if (url.includes('/s/')) {
-      return url;
-    }
-
-    return directUrl || url || window.location.href;
-  }
-
-  // Clear sticky flags so reopening website does not auto-pop the share modal
-  function resetStickyOrderState() {
-    try {
-      const allKeys = [
-        'OM_ANNIVERSARY_DATA',
-        'OM_GIRLFRIEND_DATA',
-        'OM_BIRTHDAY_DATA',
-        'OM_FRIENDSHIP_DATA',
-        'OM_APOLOGY_DATA',
-        'OM_PUZZLE_DATA',
-        'OM_SURPRISE_DATA'
-      ];
-      allKeys.forEach(k => {
-        const item = localStorage.getItem(k);
-        if (item) {
-          const parsed = JSON.parse(item);
-          if (parsed) {
-            parsed.paid = false;
-            parsed.code = '';
-            parsed.createInFlight = false;
-            localStorage.setItem(k, JSON.stringify(parsed));
-          }
-        }
-      });
-    } catch (e) {}
+    return url || window.location.href;
   }
 
   window.initCherishlyShareSuite = function (container, currentShareUrl) {
@@ -414,7 +401,10 @@
     // Mark parent modal card as active suite to hide legacy duplicate buttons
     container.classList.add('om-share-suite-active');
     const modalParent = container.closest('.om-frnd-modal, .om-bday-modal, .om-gf-modal, .om-apol-modal, .om-anniv-modal, .om-puzz-modal, .om-surp-modal');
-    if (modalParent) modalParent.classList.add('om-share-suite-active');
+    if (modalParent) {
+      modalParent.classList.add('om-share-suite-active');
+      modalParent.style.display = 'flex';
+    }
 
     const category = detectCategory();
     const presets = PRESETS_BY_CATEGORY[category] || PRESETS_BY_CATEGORY.birthday;
@@ -424,12 +414,12 @@
 
     // Update parent ticket elements if present (e.g. .om-sh2)
     if (modalParent) {
-      const ticketUrlEl = modalParent.querySelector('.om-sh2-url');
+      const ticketUrlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url-display"]');
       if (ticketUrlEl) {
         ticketUrlEl.textContent = cleanUrl;
       }
-      const ticketTitleEl = modalParent.querySelector('.om-sh2-h');
-      if (ticketTitleEl && (ticketTitleEl.textContent.includes('being made') || ticketTitleEl.textContent.includes('Creating'))) {
+      const ticketTitleEl = modalParent.querySelector('.om-sh2-h, [id*="share-title"]');
+      if (ticketTitleEl) {
         ticketTitleEl.textContent = 'The surprise is ready! ✨';
       }
       const ticketSubEl = modalParent.querySelector('.om-sh2-lab');
@@ -438,12 +428,14 @@
       }
 
       // Hook "+ Create another gift" or close buttons
-      const anotherBtns = modalParent.querySelectorAll('.om-sh2-btn-gh, [data-close-modal], [data-close], .om-anniv-unlock-close, .om-bday-modal-close');
+      const anotherBtns = modalParent.querySelectorAll('.om-sh2-btn-gh, [data-close-modal], [data-close], .om-anniv-unlock-close, .om-bday-modal-close, .om-pw2-x');
       anotherBtns.forEach(btn => {
         if (!btn._omHooked) {
           btn._omHooked = true;
           btn.addEventListener('click', () => {
             resetStickyOrderState();
+            modalParent.classList.remove('is-open');
+            modalParent.style.display = 'none';
           });
         }
       });
@@ -622,12 +614,22 @@
     const OriginalRazorpay = window.Razorpay;
 
     window.Razorpay = function (options) {
+      // Mark session as generated on successful payment
+      if (options && typeof options.handler === 'function') {
+        const origHandler = options.handler;
+        options.handler = function(res) {
+          sessionStorage.setItem('cherishly_just_generated', '1');
+          origHandler(res);
+        };
+      }
+
       const instance = new OriginalRazorpay(options);
       const originalOpen = instance.open.bind(instance);
 
       instance.open = function () {
         if (isAdmin()) {
           console.log('[Cherishly Admin] Authorized session: link generated.');
+          sessionStorage.setItem('cherishly_just_generated', '1');
           showToast('⚡ Generating admin test link...');
           if (options && typeof options.handler === 'function') {
             setTimeout(() => {
@@ -860,6 +862,7 @@
       bypassBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        sessionStorage.setItem('cherishly_just_generated', '1');
         payBtn.click();
       });
 
@@ -940,6 +943,7 @@
   function observeModals() {
     wrapRazorpay();
     injectAdminIntoModals();
+    closeStuckModalsOnLoad();
 
     const modalIds = [
       'om-bday-share-modal',
@@ -957,6 +961,14 @@
 
       const observer = new MutationObserver(() => {
         if (modal.classList.contains('is-open')) {
+          // If not genuinely just generated in this session and builder page, close it
+          if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=') && !sessionStorage.getItem('cherishly_just_generated')) {
+            modal.classList.remove('is-open');
+            modal.style.display = 'none';
+            resetStickyOrderState();
+            return;
+          }
+
           const urlEl = modal.querySelector('.om-sh2-url, [id*="share-url"], .om-share-url');
           let currentUrl = (urlEl && urlEl.textContent && !urlEl.textContent.includes('Creating') && !urlEl.textContent.includes('...'))
             ? urlEl.textContent.trim()
