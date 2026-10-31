@@ -1,0 +1,9 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/s/:slug",
+      "destination": "https://cherishly-backend.manas0000singh.workers.dev/s/:slug"
+    }
+  ]
+}

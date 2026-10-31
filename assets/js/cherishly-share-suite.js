@@ -1,6 +1,11 @@
 /**
  * Cherishly Compact & Responsive Interactive Share Suite
  * Optimized to fit 100% on any mobile screen without cutting out.
+ * Features:
+ * - Single encrypted Admin access strictly inside the checkout/payment popup modal
+ * - Robust full working URL generation (both short /s/ link and direct recipient ?d= payload)
+ * - Automatic prevention of sticky share modal on fresh builder page visits
+ * - 1-tap presets and native sharing for WhatsApp & Instagram
  */
 
 (function () {
@@ -49,10 +54,38 @@
     return 'birthday';
   }
 
+  // Prevent sticky auto-open of share modal on builder visits
+  if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')) {
+    try {
+      const allKeys = [
+        'OM_ANNIVERSARY_DATA',
+        'OM_GIRLFRIEND_DATA',
+        'OM_BIRTHDAY_DATA',
+        'OM_FRIENDSHIP_DATA',
+        'OM_APOLOGY_DATA',
+        'OM_PUZZLE_DATA',
+        'OM_SURPRISE_DATA'
+      ];
+      allKeys.forEach(k => {
+        const item = localStorage.getItem(k);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (parsed && parsed.paid) {
+            parsed.paid = false;
+            parsed.code = '';
+            parsed.createInFlight = false;
+            localStorage.setItem(k, JSON.stringify(parsed));
+          }
+        }
+      });
+    } catch (e) {}
+  }
+
   const css = `
     /* Modal Card Constraints */
     .om-bday-modal-sheet, .om-frnd-modal-card, .om-gf-modal-card,
-    .om-apol-modal-card, .om-anniv-modal-card, .om-puzz-modal-card, .om-surp-modal-card {
+    .om-apol-modal-card, .om-anniv-modal-card, .om-puzz-modal-card, .om-surp-modal-card,
+    .om-anniv-modal-sheet {
       max-height: 90vh !important;
       overflow-y: auto !important;
       padding: 18px 16px 16px !important;
@@ -280,6 +313,97 @@
     t._timer = setTimeout(() => t.classList.remove('is-show'), 2400);
   }
 
+  // Construct URL-safe Base64 direct recipient payload
+  function buildDirectRecipientUrl() {
+    try {
+      const category = detectCategory();
+      const storageKey = 'OM_' + category.toUpperCase() + '_DATA';
+      let raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        for (const k of Object.keys(localStorage)) {
+          if (k.startsWith('OM_') && k.endsWith('_DATA') && k.toLowerCase().includes(category)) {
+            raw = localStorage.getItem(k);
+            break;
+          }
+        }
+      }
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const data = JSON.parse(JSON.stringify(parsed));
+      data.t = Date.now();
+      delete data.paid;
+      delete data.paymentId;
+      delete data.pid;
+      delete data.order;
+      delete data.createInFlight;
+      delete data.shareUrl;
+
+      const jsonStr = JSON.stringify(data);
+      const b64 = btoa(unescape(encodeURIComponent(jsonStr)))
+        .replace(/\+/g, '-')
+        .split('/').join('_')
+        .replace(/=+$/, '');
+
+      let path = window.location.pathname.replace(/\/index\.html$/, '');
+      if (!path.endsWith('/')) path += '/';
+      return `${window.location.origin}${path}?d=${b64}`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function resolveWorkingShareUrl(candidateUrl) {
+    let url = candidateUrl ? String(candidateUrl).trim() : '';
+
+    // If it's a relative slug like /s/0sehebwkbf
+    if (url.startsWith('/s/')) {
+      url = window.location.origin + url;
+    } else if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      url = window.location.origin + (url.startsWith('/') ? url : '/' + url);
+    }
+
+    // Direct recipient payload URL as reliable fallback/primary
+    const directUrl = buildDirectRecipientUrl();
+
+    if (!url || url.includes('Creating') || url === window.location.href) {
+      if (directUrl) return directUrl;
+    }
+
+    // If candidate has a valid short link, verify origin
+    if (url.includes('/s/')) {
+      return url;
+    }
+
+    return directUrl || url || window.location.href;
+  }
+
+  // Clear sticky flags so reopening website does not auto-pop the share modal
+  function resetStickyOrderState() {
+    try {
+      const allKeys = [
+        'OM_ANNIVERSARY_DATA',
+        'OM_GIRLFRIEND_DATA',
+        'OM_BIRTHDAY_DATA',
+        'OM_FRIENDSHIP_DATA',
+        'OM_APOLOGY_DATA',
+        'OM_PUZZLE_DATA',
+        'OM_SURPRISE_DATA'
+      ];
+      allKeys.forEach(k => {
+        const item = localStorage.getItem(k);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (parsed) {
+            parsed.paid = false;
+            parsed.code = '';
+            parsed.createInFlight = false;
+            localStorage.setItem(k, JSON.stringify(parsed));
+          }
+        }
+      });
+    } catch (e) {}
+  }
+
   window.initCherishlyShareSuite = function (container, currentShareUrl) {
     if (!container) return;
 
@@ -296,7 +420,56 @@
     const presets = PRESETS_BY_CATEGORY[category] || PRESETS_BY_CATEGORY.birthday;
     let selectedPreset = presets[0];
 
-    const cleanUrl = currentShareUrl || window.location.href;
+    const cleanUrl = resolveWorkingShareUrl(currentShareUrl);
+
+    // Update parent ticket elements if present (e.g. .om-sh2)
+    if (modalParent) {
+      const ticketUrlEl = modalParent.querySelector('.om-sh2-url');
+      if (ticketUrlEl) {
+        ticketUrlEl.textContent = cleanUrl;
+      }
+      const ticketTitleEl = modalParent.querySelector('.om-sh2-h');
+      if (ticketTitleEl && (ticketTitleEl.textContent.includes('being made') || ticketTitleEl.textContent.includes('Creating'))) {
+        ticketTitleEl.textContent = 'The surprise is ready! ✨';
+      }
+      const ticketSubEl = modalParent.querySelector('.om-sh2-lab');
+      if (ticketSubEl) {
+        ticketSubEl.textContent = 'GIFT LINK';
+      }
+
+      // Hook "+ Create another gift" or close buttons
+      const anotherBtns = modalParent.querySelectorAll('.om-sh2-btn-gh, [data-close-modal], [data-close], .om-anniv-unlock-close, .om-bday-modal-close');
+      anotherBtns.forEach(btn => {
+        if (!btn._omHooked) {
+          btn._omHooked = true;
+          btn.addEventListener('click', () => {
+            resetStickyOrderState();
+          });
+        }
+      });
+
+      // Override top ticket copy/whatsapp buttons so they always copy the full cleanUrl
+      const topCpBtn = modalParent.querySelector('.om-sh2-cp');
+      if (topCpBtn && !topCpBtn._omHooked) {
+        topCpBtn._omHooked = true;
+        topCpBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          copyLink();
+        }, true);
+      }
+      const topWaBtn = modalParent.querySelector('.om-sh2-wa');
+      if (topWaBtn && !topWaBtn._omHooked) {
+        topWaBtn._omHooked = true;
+        topWaBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const textareaEl = container.querySelector('#om-ss-text');
+          const msg = textareaEl ? getFullMessage(textareaEl.value) : `Open your surprise here: ${cleanUrl}`;
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+        }, true);
+      }
+    }
 
     function getFullMessage(text) {
       return `${text.trim()} \n\n👉 Open here: ${cleanUrl}`;
@@ -403,7 +576,6 @@
   // SECURE ENCRYPTED ADMIN AUTHENTICATION (Single-Session Only)
   // ============================================================
   const ADMIN_SESSION_KEY = 'cherishly_sec_admin_auth';
-  // Irreversible SHA-256 digests of valid admin credentials
   const VALID_DIGESTS = [
     'b9f619ef9cb17b740687933d1f2769c350a614a8def7f315a5eb601322ef13f0', // admin:Cherishly@Admin2026!
     '0e11e01baca8d5d59476d4d5f77cd1cb95848175863a4b70bad86c3be7548a07'  // cherishly:Cherishly@Admin2026!
@@ -652,16 +824,18 @@
     }, 20);
   }
 
-  // Inject Admin access trigger and bypass button into payment modals
+  // Inject Admin access trigger ONLY inside the checkout/unlock payment modal
   function injectAdminIntoModals() {
     const paywalls = document.querySelectorAll('[id*="unlock-modal"], [class*="unlock-modal"], [id*="paywall"]');
     paywalls.forEach(modal => {
       if (modal.querySelector('.om-admin-bypass-btn')) return;
 
-      const btn = modal.querySelector('.om-pw2-pay, button[id*="pay"], button[id*="unlock"], button[class*="pay"], button[class*="btn"], .om-pw2-btn, button');
-      if (!btn || !btn.parentNode) return;
+      const payBtn = modal.querySelector('.om-pw2-pay, button[id*="pay"], [id*="pay-btn"], button[class*="pay"]');
+      if (!payBtn) return;
 
-      // 1. Prominent Admin Pass button (shown only when authenticated)
+      const container = payBtn.closest('.om-pw2-ft') || payBtn.parentNode;
+
+      // 1. Prominent Admin Pass button (shown ONLY when authenticated)
       const bypassBtn = document.createElement('button');
       bypassBtn.type = 'button';
       bypassBtn.className = 'om-admin-bypass-btn';
@@ -686,7 +860,7 @@
       bypassBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        btn.click();
+        payBtn.click();
       });
 
       // 2. Active admin indicator bar with Log Out
@@ -721,13 +895,14 @@
         logoutAdmin();
       });
 
-      // 3. Subtle trigger link when not logged in
+      // 3. Subtle trigger link placed at bottom of paywall card
       const triggerWrap = document.createElement('div');
       triggerWrap.className = 'om-admin-trigger-wrap';
       triggerWrap.style.cssText = `
         display: ${isAdmin() ? 'none' : 'block'};
         text-align: center;
-        margin-top: 12px;
+        margin-top: 14px;
+        margin-bottom: 6px;
       `;
       triggerWrap.innerHTML = `
         <button type="button" class="om-admin-trigger-btn" style="
@@ -756,84 +931,10 @@
         openAdminModal();
       });
 
-      btn.parentNode.insertBefore(bypassBtn, btn.nextSibling);
-      btn.parentNode.insertBefore(sessionBar, bypassBtn.nextSibling);
-      btn.parentNode.appendChild(triggerWrap);
+      payBtn.parentNode.insertBefore(bypassBtn, payBtn.nextSibling);
+      payBtn.parentNode.insertBefore(sessionBar, bypassBtn.nextSibling);
+      container.appendChild(triggerWrap);
     });
-
-    // 2. Also inject prominent Admin trigger into preview / generate action bars & preview badges on the page
-    const previewBadges = document.querySelectorAll('[id*="preview-badge"], [class*="preview-badge"]');
-    previewBadges.forEach(badge => {
-      if (badge.parentNode.querySelector('.om-admin-badge-btn')) return;
-
-      const badgeBtn = document.createElement('button');
-      badgeBtn.type = 'button';
-      badgeBtn.className = 'om-admin-badge-btn';
-      badgeBtn.style.cssText = 'position:fixed;top:14px;right:70px;z-index:99999;background:' + (isAdmin() ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(15,23,42,0.85)') + ';color:#FFF;border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-      badgeBtn.innerHTML = isAdmin() ? '&#9889; Admin: Get Link (Free)' : '&#128274; Admin Login';
-
-      badgeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (isAdmin()) {
-          const payBtn = document.querySelector('.om-pw2-pay, button[id*="pay"], button[id*="unlock"], button[id*="generate"]');
-          if (payBtn) payBtn.click();
-        } else {
-          openAdminModal();
-        }
-      });
-
-      badge.parentNode.appendChild(badgeBtn);
-    });
-
-    // 2b. Also inject prominent Admin trigger into preview / generate action bars on the page
-    const generateBars = document.querySelectorAll('[id*="generate-bar"], .om-generate-bar, .om-cinema-bar, [id*="generate-btn"], .om-apol-generate-btn');
-    generateBars.forEach(bar => {
-      if (bar.querySelector('.om-admin-preview-pill')) return;
-
-      const pillWrap = document.createElement('div');
-      pillWrap.className = 'om-admin-preview-pill';
-      pillWrap.style.cssText = 'display:flex;justify-content:center;margin-top:8px;width:100%;';
-
-      const genBtn = bar.querySelector('button[id*="generate"], .om-anniv-btn, .om-apol-btn, .om-bday-btn, button');
-
-      const pill = document.createElement('button');
-      pill.type = 'button';
-      pill.className = 'om-admin-bar-btn';
-      pill.style.cssText = isAdmin()
-        ? 'background:linear-gradient(135deg, #10B981 0%, #059669 100%);color:#FFF;border:none;border-radius:999px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(16,185,129,0.3);'
-        : 'background:rgba(0,0,0,0.06);color:#64748B;border:1px dashed #94A3B8;border-radius:999px;padding:6px 14px;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;';
-      pill.innerHTML = isAdmin() ? '&#9889; Admin: Generate Live Link (Free) &rarr;' : '&#128274; Admin Access';
-
-      pill.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (isAdmin()) {
-          if (genBtn) genBtn.click();
-        } else {
-          openAdminModal();
-        }
-      });
-
-      pillWrap.appendChild(pill);
-      bar.appendChild(pillWrap);
-    });
-
-    // Also inject subtle lock icon into page footer
-    const footerBase = document.querySelector('.omh-fbase, footer .omh-fbase');
-    if (footerBase && !footerBase.querySelector('.om-admin-ft-lock')) {
-      const lockLink = document.createElement('a');
-      lockLink.href = '#';
-      lockLink.className = 'om-admin-ft-lock';
-      lockLink.title = 'Admin';
-      lockLink.style.cssText = 'display:inline-block;margin-left:8px;color:#9a9ab3;opacity:0.4;vertical-align:middle;';
-      lockLink.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-      lockLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        openAdminModal();
-      });
-      footerBase.appendChild(lockLink);
-    }
   }
 
   function observeModals() {
@@ -856,12 +957,12 @@
 
       const observer = new MutationObserver(() => {
         if (modal.classList.contains('is-open')) {
-          const urlEl = modal.querySelector('[id*="share-url"]') || modal.querySelector('.om-share-url');
-          let currentUrl = (urlEl && urlEl.textContent && !urlEl.textContent.includes('Creating'))
+          const urlEl = modal.querySelector('.om-sh2-url, [id*="share-url"], .om-share-url');
+          let currentUrl = (urlEl && urlEl.textContent && !urlEl.textContent.includes('Creating') && !urlEl.textContent.includes('...'))
             ? urlEl.textContent.trim()
-            : window.location.href;
+            : '';
 
-          const card = modal.querySelector('.om-bday-modal-body') || modal.querySelector('[class*="modal-card"]') || modal.firstElementChild;
+          const card = modal.querySelector('.om-bday-modal-body') || modal.querySelector('[class*="modal-card"]') || modal.querySelector('.om-anniv-modal-sheet') || modal.firstElementChild;
           if (card && !card.querySelector('.om-share-suite')) {
             window.initCherishlyShareSuite(card, currentUrl);
           }
@@ -871,7 +972,7 @@
       observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
     });
 
-    // Also observe document body for dynamically added unlock modals
+    // Also observe document body for dynamically added unlock payment modals
     const bodyObserver = new MutationObserver(() => {
       injectAdminIntoModals();
     });

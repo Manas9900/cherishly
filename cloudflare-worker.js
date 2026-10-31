@@ -406,11 +406,30 @@ export default {
         });
       }
 
-      // ACTIVE LINK: Redirect to recipient experience on Vercel
+      // ACTIVE LINK: Redirect directly to recipient experience on Vercel
       const wish = JSON.parse(raw);
-      const product = (wish.data && (wish.data.product || wish.data.type)) || 'birthday';
-      const targetOrigin = wish.frontendOrigin || 'https://cherishly.vercel.app';
-      return Response.redirect(`${targetOrigin}/${product}/?wish=${code}`, 302);
+      const product = (wish.data && (wish.data.product || wish.data.type)) || 'anniversary';
+      const targetOrigin = wish.frontendOrigin || 'https://cherishly-in.vercel.app';
+      
+      let redirectUrl = `${targetOrigin}/${product}/`;
+      try {
+        if (wish.data) {
+          const jsonStr = JSON.stringify(wish.data);
+          const utf8Bytes = new TextEncoder().encode(jsonStr);
+          let binary = '';
+          for (let i = 0; i < utf8Bytes.length; i++) {
+            binary += String.fromCharCode(utf8Bytes[i]);
+          }
+          const b64 = btoa(binary).replace(/\+/g, '-').split('/').join('_').replace(/=+$/, '');
+          redirectUrl += `?d=${b64}`;
+        } else {
+          redirectUrl += `?wish=${code}`;
+        }
+      } catch (e) {
+        redirectUrl += `?wish=${code}`;
+      }
+
+      return Response.redirect(redirectUrl, 302);
     }
 
     return new Response('Cherishly API Engine Active', { status: 200 });
