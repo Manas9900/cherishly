@@ -1056,6 +1056,16 @@
             ? urlEl.textContent.trim()
             : '';
 
+          // Sanitize validity text to 14 days
+          modal.querySelectorAll('*').forEach(el => {
+            if (el.children.length === 0 && (el.textContent.includes('3 months') || el.textContent.includes('30 days') || el.textContent.includes('90 days'))) {
+              el.textContent = el.textContent
+                .replace(/3\s*months/gi, '14 days')
+                .replace(/30\s*days/gi, '14 days')
+                .replace(/90\s*days/gi, '14 days');
+            }
+          });
+
           const card = modal.querySelector('.om-bday-modal-body') || modal.querySelector('[class*="modal-card"]') || modal.querySelector('.om-anniv-modal-sheet') || modal.firstElementChild;
           if (card && !card.querySelector('.om-share-suite')) {
             window.initCherishlyShareSuite(card, currentUrl);

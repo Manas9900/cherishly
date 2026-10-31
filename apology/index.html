@@ -3,6 +3,17 @@
 <head>
 	<script>
 	(function(){
+		// If visited via #draft=... (e.g. copied from address bar), automatically redirect to recipient view ?d=...
+		if(window.location.hash && window.location.hash.indexOf('#draft=') === 0 && !window.location.search.includes('?edit=1')){
+			var rawDraft = window.location.hash.slice(7);
+			if(rawDraft && rawDraft.length > 20){
+				var path = window.location.pathname;
+				if(!path.endsWith('/') && !path.endsWith('.html')) path += '/';
+				window.location.replace(path + '?d=' + rawDraft);
+				return;
+			}
+		}
+
 		if(!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')){
 			try{
 				['OM_ANNIVERSARY_DATA','OM_GIRLFRIEND_DATA','OM_BIRTHDAY_DATA','OM_FRIENDSHIP_DATA','OM_APOLOGY_DATA','OM_PUZZLE_DATA','OM_SURPRISE_DATA'].forEach(function(k){
