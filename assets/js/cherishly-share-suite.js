@@ -152,20 +152,29 @@
 
     /* Hide legacy duplicate button rows when suite is loaded */
     .om-share-suite-active .om-bday-share-btns,
-    .om-share-suite-active .om-frnd-share-btns,
-    .om-share-suite-active .om-gf-share-btns,
-    .om-share-suite-active .om-apol-share-btns,
-    .om-share-suite-active .om-anniv-share-btns,
-    .om-share-suite-active .om-frnd-share-row,
-    .om-share-suite-active .om-gf-share-row,
-    .om-share-suite-active .om-gf-midnight,
     .om-share-suite-active .om-bday-share-url,
     .om-share-suite-active .om-bday-modal-note,
+    .om-share-suite-active .om-bday-share-preview,
+    .om-share-suite-active .om-frnd-share-row,
+    .om-share-suite-active .om-frnd-share-btns,
+    .om-share-suite-active .om-frnd-midnight,
+    .om-share-suite-active .om-gf-share-row,
+    .om-share-suite-active .om-gf-share-btns,
+    .om-share-suite-active .om-gf-midnight,
+    .om-share-suite-active .om-apol-share-actions,
+    .om-share-suite-active .om-apol-share-btns,
+    .om-share-suite-active .om-apol-share-preview,
+    .om-share-suite-active .om-apol-share-url,
+    .om-share-suite-active .om-puzz-share-row,
+    .om-share-suite-active .om-puzz-share-btns,
+    .om-share-suite-active .om-surp-share-actions,
+    .om-share-suite-active .om-surp-share-btns,
+    .om-share-suite-active .om-surp-share-preview,
+    .om-share-suite-active .om-surp-share-url,
+    .om-share-suite-active .om-anniv-share-btns,
     .om-share-suite-active .om-sh2-wa,
     .om-share-suite-active .om-sh2-cp,
-    .om-share-suite-active .om-sh2-btns,
-    .om-share-suite-active .om-puzz-share-btns,
-    .om-share-suite-active .om-surp-share-btns {
+    .om-share-suite-active .om-sh2-btns {
       display: none !important;
     }
 
@@ -409,12 +418,34 @@
     try {
       const category = detectCategory();
 
-      // 1. If girlfriend template has dedicated helper:
-      if (category === 'girlfriend') {
-        if (typeof window._omGfGetDirectUrl === 'function') {
-          const u = window._omGfGetDirectUrl();
-          if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
-        }
+      // 1. Template-specific direct link functions
+      if (category === 'girlfriend' && typeof window._omGfGetDirectUrl === 'function') {
+        const u = window._omGfGetDirectUrl();
+        if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
+      }
+      if (category === 'friendship' && typeof window._omFrndGetDirectUrl === 'function') {
+        const u = window._omFrndGetDirectUrl();
+        if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
+      }
+      if (category === 'birthday' && typeof window._omBdayGetDirectUrl === 'function') {
+        const u = window._omBdayGetDirectUrl();
+        if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
+      }
+      if (category === 'apology' && typeof window._omApolGetDirectUrl === 'function') {
+        const u = window._omApolGetDirectUrl();
+        if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
+      }
+      if (category === 'puzzle' && typeof window._omPuzzGetDirectUrl === 'function') {
+        const u = window._omPuzzGetDirectUrl();
+        if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
+      }
+      if (category === 'surprise' && typeof window._omSurpGetDirectUrl === 'function') {
+        const u = window._omSurpGetDirectUrl();
+        if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
+      }
+      if (category === 'anniversary' && typeof window._omAnnivGetDirectUrl === 'function') {
+        const u = window._omAnnivGetDirectUrl();
+        if (u && (u.includes('?d=') || u.includes('/s/'))) return u;
       }
 
       // 2. If page hash has #draft=... (e.g. preview mode)
@@ -550,7 +581,7 @@
       modalParent.classList.add('is-open');
 
       // Unhide header/title elements in modalParent that template scripts might have hidden
-      modalParent.querySelectorAll('.om-gf-modal-h, .om-gf-modal-s, [class*="modal-h"], [class*="modal-s"]').forEach(el => {
+      modalParent.querySelectorAll('.om-gf-modal-h, .om-gf-modal-s, .om-frnd-modal-h, .om-frnd-modal-s, .om-bday-share-title, .om-bday-share-sub, .om-apol-modal-title, .om-apol-modal-sub, .om-surp-modal-title, .om-surp-modal-sub, [class*="modal-h"], [class*="modal-s"], [class*="modal-title"], [class*="modal-sub"], [class*="drop-emoji"]').forEach(el => {
         el.removeAttribute('data-omsh-hide');
       });
     }
