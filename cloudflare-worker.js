@@ -92,12 +92,12 @@ export default {
     }
 
     // -------------------------------------------------------------
-    // 1b. VOICE UPLOADS (Cloudflare R2)
+    // 1b. VOICE & SONG DEDICATION UPLOADS (Cloudflare R2)
     // -------------------------------------------------------------
     if ((pathname === '/wp-json/om/v1/upload-voice' || pathname === '/wp-json/om/v1/voice' || pathname === '/upload-voice' || pathname === '/api/upload-voice') && request.method === 'POST') {
       try {
         const formData = await request.formData();
-        let file = formData.get('audio') || formData.get('voice') || formData.get('file') || formData.get('media');
+        let file = formData.get('audio') || formData.get('voice') || formData.get('song') || formData.get('file') || formData.get('media');
 
         if (!file || typeof file === 'string') {
           for (const [_, val] of formData.entries()) {
@@ -109,24 +109,37 @@ export default {
         }
 
         if (!file || typeof file === 'string') {
-          return jsonRes({ success: false, error: 'No audio file uploaded' }, 400);
+          return jsonRes({ success: false, error: 'No audio or song file uploaded' }, 400);
         }
 
-        let ext = 'webm';
+        let ext = 'mp3';
         if (file.name && file.name.includes('.')) {
-          ext = file.name.split('.').pop();
+          ext = file.name.split('.').pop().toLowerCase();
         } else if (file.type) {
-          if (file.type.includes('mp4')) ext = 'm4a';
+          if (file.type.includes('mpeg') || file.type.includes('mp3')) ext = 'mp3';
+          else if (file.type.includes('mp4') || file.type.includes('m4a')) ext = 'm4a';
           else if (file.type.includes('ogg')) ext = 'ogg';
           else if (file.type.includes('wav')) ext = 'wav';
+          else if (file.type.includes('webm')) ext = 'webm';
+          else if (file.type.includes('aac')) ext = 'aac';
         }
+
+        const mimeMap = {
+          'mp3': 'audio/mpeg',
+          'm4a': 'audio/mp4',
+          'wav': 'audio/wav',
+          'ogg': 'audio/ogg',
+          'webm': 'audio/webm',
+          'aac': 'audio/aac'
+        };
+        const detectedContentType = file.type || mimeMap[ext] || 'audio/mpeg';
 
         const key = `photos/voices/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
 
         if (env.PHOTOS_BUCKET) {
           await env.PHOTOS_BUCKET.put(key, file.stream(), {
             httpMetadata: {
-              contentType: file.type || 'audio/webm',
+              contentType: detectedContentType,
               cacheControl: 'public, max-age=1209600' // 14 days cache
             },
             customMetadata: {
@@ -144,7 +157,8 @@ export default {
             display_url: publicUrl,
             file_url: publicUrl,
             voice_url: publicUrl,
-            name: file.name || `voice.${ext}`,
+            song_url: publicUrl,
+            name: file.name || `audio.${ext}`,
             key: key
           }
         });
