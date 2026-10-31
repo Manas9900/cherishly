@@ -92,6 +92,68 @@ export default {
     }
 
     // -------------------------------------------------------------
+    // 1b. VOICE UPLOADS (Cloudflare R2)
+    // -------------------------------------------------------------
+    if ((pathname === '/wp-json/om/v1/upload-voice' || pathname === '/wp-json/om/v1/voice' || pathname === '/upload-voice' || pathname === '/api/upload-voice') && request.method === 'POST') {
+      try {
+        const formData = await request.formData();
+        let file = formData.get('audio') || formData.get('voice') || formData.get('file') || formData.get('media');
+
+        if (!file || typeof file === 'string') {
+          for (const [_, val] of formData.entries()) {
+            if (val && typeof val === 'object' && typeof val.stream === 'function') {
+              file = val;
+              break;
+            }
+          }
+        }
+
+        if (!file || typeof file === 'string') {
+          return jsonRes({ success: false, error: 'No audio file uploaded' }, 400);
+        }
+
+        let ext = 'webm';
+        if (file.name && file.name.includes('.')) {
+          ext = file.name.split('.').pop();
+        } else if (file.type) {
+          if (file.type.includes('mp4')) ext = 'm4a';
+          else if (file.type.includes('ogg')) ext = 'ogg';
+          else if (file.type.includes('wav')) ext = 'wav';
+        }
+
+        const key = `photos/voices/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
+
+        if (env.PHOTOS_BUCKET) {
+          await env.PHOTOS_BUCKET.put(key, file.stream(), {
+            httpMetadata: {
+              contentType: file.type || 'audio/webm',
+              cacheControl: 'public, max-age=1209600' // 14 days cache
+            },
+            customMetadata: {
+              uploadedAt: new Date().toISOString(),
+              expiresAt: new Date(Date.now() + 14 * 86400 * 1000).toISOString()
+            }
+          });
+        }
+
+        const publicUrl = `${url.origin}/${key}`;
+        return jsonRes({
+          success: true,
+          data: {
+            url: publicUrl,
+            display_url: publicUrl,
+            file_url: publicUrl,
+            voice_url: publicUrl,
+            name: file.name || `voice.${ext}`,
+            key: key
+          }
+        });
+      } catch (err) {
+        return jsonRes({ success: false, error: err.message }, 500);
+      }
+    }
+
+    // -------------------------------------------------------------
     // 2. SERVE PHOTOS FROM R2 WITH FULL CORS
     // -------------------------------------------------------------
     if (pathname.startsWith('/photos/') && request.method === 'GET') {
