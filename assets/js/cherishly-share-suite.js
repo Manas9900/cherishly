@@ -658,7 +658,7 @@
     paywalls.forEach(modal => {
       if (modal.querySelector('.om-admin-bypass-btn')) return;
 
-      const btn = modal.querySelector('button[id*="unlock"], button[class*="btn"], .om-pw2-btn');
+      const btn = modal.querySelector('.om-pw2-pay, button[id*="pay"], button[id*="unlock"], button[class*="pay"], button[class*="btn"], .om-pw2-btn, button');
       if (!btn || !btn.parentNode) return;
 
       // 1. Prominent Admin Pass button (shown only when authenticated)
@@ -759,6 +759,64 @@
       btn.parentNode.insertBefore(bypassBtn, btn.nextSibling);
       btn.parentNode.insertBefore(sessionBar, bypassBtn.nextSibling);
       btn.parentNode.appendChild(triggerWrap);
+    });
+
+    // 2. Also inject prominent Admin trigger into preview / generate action bars & preview badges on the page
+    const previewBadges = document.querySelectorAll('[id*="preview-badge"], [class*="preview-badge"]');
+    previewBadges.forEach(badge => {
+      if (badge.parentNode.querySelector('.om-admin-badge-btn')) return;
+
+      const badgeBtn = document.createElement('button');
+      badgeBtn.type = 'button';
+      badgeBtn.className = 'om-admin-badge-btn';
+      badgeBtn.style.cssText = 'position:fixed;top:14px;right:70px;z-index:99999;background:' + (isAdmin() ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(15,23,42,0.85)') + ';color:#FFF;border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+      badgeBtn.innerHTML = isAdmin() ? '&#9889; Admin: Get Link (Free)' : '&#128274; Admin Login';
+
+      badgeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isAdmin()) {
+          const payBtn = document.querySelector('.om-pw2-pay, button[id*="pay"], button[id*="unlock"], button[id*="generate"]');
+          if (payBtn) payBtn.click();
+        } else {
+          openAdminModal();
+        }
+      });
+
+      badge.parentNode.appendChild(badgeBtn);
+    });
+
+    // 2b. Also inject prominent Admin trigger into preview / generate action bars on the page
+    const generateBars = document.querySelectorAll('[id*="generate-bar"], .om-generate-bar, .om-cinema-bar, [id*="generate-btn"], .om-apol-generate-btn');
+    generateBars.forEach(bar => {
+      if (bar.querySelector('.om-admin-preview-pill')) return;
+
+      const pillWrap = document.createElement('div');
+      pillWrap.className = 'om-admin-preview-pill';
+      pillWrap.style.cssText = 'display:flex;justify-content:center;margin-top:8px;width:100%;';
+
+      const genBtn = bar.querySelector('button[id*="generate"], .om-anniv-btn, .om-apol-btn, .om-bday-btn, button');
+
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'om-admin-bar-btn';
+      pill.style.cssText = isAdmin()
+        ? 'background:linear-gradient(135deg, #10B981 0%, #059669 100%);color:#FFF;border:none;border-radius:999px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(16,185,129,0.3);'
+        : 'background:rgba(0,0,0,0.06);color:#64748B;border:1px dashed #94A3B8;border-radius:999px;padding:6px 14px;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;';
+      pill.innerHTML = isAdmin() ? '&#9889; Admin: Generate Live Link (Free) &rarr;' : '&#128274; Admin Access';
+
+      pill.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isAdmin()) {
+          if (genBtn) genBtn.click();
+        } else {
+          openAdminModal();
+        }
+      });
+
+      pillWrap.appendChild(pill);
+      bar.appendChild(pillWrap);
     });
 
     // Also inject subtle lock icon into page footer
