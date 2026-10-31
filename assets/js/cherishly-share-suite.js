@@ -560,33 +560,52 @@
     let path = window.location.pathname.replace(/\/index\.html$/, '');
     if (!path.endsWith('/')) path += '/';
 
-    // If candidateUrl is raw base64 payload (e.g. starts with eyJ or wiZn or raw string without / or ?)
+    // 1. If candidateUrl is raw base64 payload (e.g. starts with eyJ or wiZn or raw string without / or ?)
     if (url && !url.includes('/') && !url.includes('?') && url.length > 20) {
       return `${window.location.origin}${path}?d=${url}`;
     }
 
-    // Fix any Cherishly.live domain to current window origin
+    // 2. If it starts with a protocol-relative '//', prepend https:
+    if (url.startsWith('//')) {
+      url = 'https:' + url;
+    }
+
+    // 3. If it starts with any domain name without protocol (e.g. cherishly-in.vercel.app or cherishly.live)
+    if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/i.test(url)) {
+      url = 'https://' + url;
+    }
+
+    // 4. Fix any Cherishly.live / vercel domain to current window origin
     if (url.includes('Cherishly.live') || url.includes('cherishly.live')) {
       url = url.replace(/https?:\/\/[a-zA-Z0-9.-]*cherishly\.live/i, window.location.origin);
     }
 
+    // 5. Clean relative paths
     if (url.startsWith('/s/')) {
       url = window.location.origin + url;
+    } else if (url.startsWith('/')) {
+      url = window.location.origin + url;
     } else if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
-      url = window.location.origin + (url.startsWith('/') ? url : '/' + url);
+      url = window.location.origin + '/' + url;
     }
 
-    // If candidateUrl already has ?d=, prefer it with the right origin
+    // 6. Clean any duplicate domain in pathname (e.g. https://domain.com/domain.com/path or https://domain.com/cherishly-in.vercel.app/path)
+    url = url.replace(/(https?:\/\/[^\/]+)\/(?:[a-zA-Z0-9.-]+\.(?:vercel\.app|live))\//i, '$1/');
+    if (url.startsWith(window.location.origin + '/' + window.location.host + '/')) {
+      url = url.replace(window.location.origin + '/' + window.location.host + '/', window.location.origin + '/');
+    }
+
+    // 7. If candidateUrl already has ?d=, prefer it with the right origin
     if (url && url.includes('?d=')) {
       return url;
     }
 
-    // If candidateUrl is a short link, prefer it
+    // 8. If candidateUrl is a short link, prefer it
     if (url && url.includes('/s/')) {
       return url;
     }
 
-    // Fall back to direct recipient payload link built from draft
+    // 9. Fall back to direct recipient payload link built from draft
     const directUrl = buildDirectRecipientUrl();
     if (directUrl) return directUrl;
 

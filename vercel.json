@@ -1,5 +1,17 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/cherishly-in.vercel.app/:match*",
+      "destination": "/:match*",
+      "permanent": false
+    },
+    {
+      "source": "/cherishly.live/:match*",
+      "destination": "/:match*",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/s/:slug",
