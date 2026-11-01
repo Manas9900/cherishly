@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cherishly &bull; Opening your surprise...</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #1E1220 0%, #0B070D 100%);
+      color: #FFF;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 28px;
+      padding: 38px 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      animation: popIn 0.3s ease-out;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3.5px solid rgba(255, 107, 139, 0.2);
+      border-top-color: #FF6B8B;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .emoji { font-size: 52px; margin-bottom: 12px; }
+    h1 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 23px;
+      font-weight: 800;
+      color: #FF8EA7;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.82);
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(255, 107, 139, 0.18);
+      color: #FF8EA7;
+      border: 1px solid rgba(255, 107, 139, 0.3);
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #FF6B8B 0%, #E23B67 100%);
+      color: #FFF;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 13px 28px;
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(226, 59, 103, 0.4);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .btn:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+
+  <!-- Loading State -->
+  <div class="card" id="card-loading">
+    <div class="spinner"></div>
+    <h1>Opening your surprise...</h1>
+    <p>Unwrapping your personalized memories. Hold tight ✨</p>
+  </div>
+
+  <!-- Expired State (Shown only after 14 days) -->
+  <div class="card" id="card-expired" style="display: none;">
+    <div class="emoji">⏳✨</div>
+    <div class="badge">14-Day Memory Safe Policy</div>
+    <h1>This Link Has Expired</h1>
+    <p>Cherishly surprises stay live for 14 days so you can enjoy them privately. This link has completed its 14-day window and has been safely cleaned up.</p>
+    <a href="/" class="btn">Create A New Surprise &rarr;</a>
+  </div>
+
+  <script>
+    (async function() {
+      try {
+        const path = window.location.pathname;
+        const parts = path.split('/s/');
+        const slug = parts[1] ? parts[1].split('/')[0].split('?')[0].split('#')[0].trim() : '';
+
+        if (!slug) {
+          window.location.replace('/');
+          return;
+        }
+
+        const res = await fetch('https://cherishly-backend.manas0000singh.workers.dev/api/wish/' + encodeURIComponent(slug));
+        if (!res.ok) {
+          document.getElementById('card-loading').style.display = 'none';
+          document.getElementById('card-expired').style.display = 'block';
+          return;
+        }
+
+        const wish = await res.json();
+        const data = wish.data || wish;
+
+        // Auto-detect product
+        let product = data.product || data.type;
+        if (!product) {
+          if (data.an || data.mt || data.ms) product = 'anniversary';
+          else if (data.k === 'gf' || data.seal || data.since) product = 'girlfriend';
+          else if (data.candles || data.bday || data.cake) product = 'birthday';
+          else if (data.apology || data.forgive) product = 'apology';
+          else if (data.puzzle || data.grid) product = 'puzzle';
+          else if (data.friend || data.bff) product = 'friendship';
+          else product = 'anniversary';
+        }
+
+        // Pack data into base64 payload
+        const jsonStr = JSON.stringify(data);
+        const utf8Bytes = new TextEncoder().encode(jsonStr);
+        let binary = '';
+        for (let i = 0; i < utf8Bytes.length; i++) {
+          binary += String.fromCharCode(utf8Bytes[i]);
+        }
+        const b64 = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        // Redirect immediately to the correct occasion recipient page
+        window.location.replace('/' + product + '/?d=' + b64);
+      } catch (err) {
+        console.error('Shortlink resolution error:', err);
+        document.getElementById('card-loading').style.display = 'none';
+        document.getElementById('card-expired').style.display = 'block';
+      }
+    })();
+  </script>
+</body>
+</html>
