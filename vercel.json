@@ -12,12 +12,22 @@
       "permanent": false
     },
     {
+      "source": "/cherishly.in/(.*)",
+      "destination": "/$1",
+      "permanent": false
+    },
+    {
       "source": "/cherishly-in.vercel.app",
       "destination": "/",
       "permanent": false
     },
     {
       "source": "/cherishly.live",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/cherishly.in",
       "destination": "/",
       "permanent": false
     }
