@@ -899,6 +899,72 @@
     });
   }
 
+  // Global inline audio player handler for raw song links across all templates
+  var globalInlineAudio = null;
+  var activeAudioBtn = null;
+
+  function handleInlineSongClick(e) {
+    var btn = e.target.closest('a[href*=".mp3"], a[href*=".wav"], a[href*=".m4a"], a[href*=".ogg"], a[href*="/photos/voices/"], .om-anniv-songlink, [id*="songlink"], [class*="songlink"]');
+    if (!btn) return;
+
+    var href = btn.getAttribute('href') || (btn.dataset && btn.dataset.audioUrl) || '';
+    if (!href || href.includes('spotify.com') || href.includes('youtube.com') || href.includes('youtu.be')) {
+      return; // Let external streaming platforms open naturally
+    }
+
+    // It is a direct audio file or voice note - play inline!
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (globalInlineAudio && !globalInlineAudio.paused && activeAudioBtn === btn) {
+      globalInlineAudio.pause();
+      btn.innerHTML = btn.dataset.origText || '▶ Play our song 🎵';
+      return;
+    }
+
+    if (globalInlineAudio) {
+      globalInlineAudio.pause();
+      if (activeAudioBtn && activeAudioBtn !== btn) {
+        activeAudioBtn.innerHTML = activeAudioBtn.dataset.origText || '▶ Play our song 🎵';
+      }
+    }
+
+    if (!btn.dataset.origText) {
+      btn.dataset.origText = btn.innerHTML;
+    }
+
+    activeAudioBtn = btn;
+    globalInlineAudio = new Audio(href);
+
+    globalInlineAudio.addEventListener('play', function () {
+      btn.innerHTML = '⏸ Pause our song 🎵';
+      duckBackgroundMusic(true);
+    });
+
+    globalInlineAudio.addEventListener('pause', function () {
+      btn.innerHTML = btn.dataset.origText || '▶ Play our song 🎵';
+      duckBackgroundMusic(false);
+    });
+
+    globalInlineAudio.addEventListener('ended', function () {
+      btn.innerHTML = btn.dataset.origText || '▶ Play our song 🎵';
+      duckBackgroundMusic(false);
+    });
+
+    globalInlineAudio.addEventListener('error', function () {
+      btn.innerHTML = btn.dataset.origText || '▶ Play our song 🎵';
+      duckBackgroundMusic(false);
+      window.open(href, '_blank', 'noopener,noreferrer');
+    });
+
+    globalInlineAudio.play().catch(function () {
+      // If autoplay blocked, fall back to new tab
+      window.open(href, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  document.addEventListener('click', handleInlineSongClick, true);
+
   // Export to window
   window.CherishlyAudioSuite = {
     initBuilder: initVoiceAndSongBuilder,

@@ -205,26 +205,38 @@
       display: none !important;
     }
 
-    /* Bulletproof immunity against template hiding scripts (data-omsh-hide) */
+    /* Bulletproof immunity against template hiding scripts and row flex squishing */
     .om-share-suite,
-    .om-share-suite.om-sh2-fix,
-    [data-omsh-hide].om-share-suite,
-    .om-share-suite[data-omsh-hide],
-    #om-gf-share-modal .om-share-suite,
     #om-anniv-share-modal .om-share-suite,
     #om-bday-share-modal .om-share-suite,
+    #om-gf-share-modal .om-share-suite,
     #om-apol-share-modal .om-share-suite,
     #om-frnd-share-modal .om-share-suite,
     #om-puzz-share-modal .om-share-suite,
-    #om-surp-share-modal .om-share-suite {
-      display: block !important;
+    #om-surp-share-modal .om-share-suite,
+    [id*="-share-modal"] .om-share-suite {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      justify-content: flex-start !important;
       visibility: visible !important;
       opacity: 1 !important;
       margin-top: 10px !important;
       text-align: left !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
       width: 100% !important;
+      max-width: 100% !important;
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      min-height: auto !important;
       box-sizing: border-box !important;
+    }
+    .om-share-suite > * {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      flex-shrink: 0 !important;
     }
     .om-share-suite * { box-sizing: border-box !important; visibility: visible !important; }
 
@@ -554,6 +566,67 @@
     }
   }
 
+  // Extract plain draft object for short link API creation
+  function getDraftPayloadObject() {
+    try {
+      const category = detectCategory();
+
+      // Check page hash #draft=
+      if (window.location.hash && window.location.hash.includes('#draft=')) {
+        let b64 = window.location.hash.split('#draft=')[1].split('&')[0];
+        if (b64 && b64.length > 10) {
+          b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          const parsed = JSON.parse(decodeURIComponent(escape(atob(b64))));
+          parsed.product = category;
+          return parsed;
+        }
+      }
+
+      // Check localStorage
+      const storageKey = 'OM_' + category.toUpperCase() + '_DATA';
+      let raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        for (const k of Object.keys(localStorage)) {
+          if (k.startsWith('OM_') && k.endsWith('_DATA') && k.toLowerCase().includes(category)) {
+            raw = localStorage.getItem(k);
+            break;
+          }
+        }
+      }
+
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.product = category;
+        return parsed;
+      }
+
+      const gfData = window._omGfBuilderData || window.OM_GIRLFRIEND_DATA;
+      if (category === 'girlfriend' && gfData) {
+        return {
+          product: 'girlfriend',
+          n: gfData.name || '',
+          f: gfData.from || '',
+          k: gfData.kind || 'gf',
+          v: gfData.vibe || '',
+          o: gfData.occasion || '',
+          g: '3',
+          sl: gfData.seal || '',
+          st: gfData.sticker || '',
+          vo: gfData.voiceUrl || '',
+          sd: gfData.since || '',
+          rs: Array.isArray(gfData.notes) ? gfData.notes : [],
+          p: Array.isArray(gfData.photos) ? gfData.photos : [],
+          lt: gfData.msg || '',
+          t: Date.now()
+        };
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function resolveWorkingShareUrl(candidateUrl) {
     let url = candidateUrl ? String(candidateUrl).trim() : '';
 
@@ -595,13 +668,13 @@
       url = url.replace(window.location.origin + '/' + window.location.host + '/', window.location.origin + '/');
     }
 
-    // 7. If candidateUrl already has ?d=, prefer it with the right origin
-    if (url && url.includes('?d=')) {
+    // 7. If candidateUrl is a short link, ALWAYS PREFER IT!
+    if (url && url.includes('/s/')) {
       return url;
     }
 
-    // 8. If candidateUrl is a short link, prefer it
-    if (url && url.includes('/s/')) {
+    // 8. If candidateUrl already has ?d=, prefer it with the right origin
+    if (url && url.includes('?d=')) {
       return url;
     }
 
@@ -612,8 +685,19 @@
     return url || (window.location.origin + path);
   }
 
+  function closeAllUnlockModals() {
+    const unlockModals = document.querySelectorAll('#om-anniv-unlock-modal, #om-bday-unlock-modal, #om-gf-unlock-modal, #om-frnd-unlock-modal, #om-apol-unlock-modal, #om-puzz-unlock-modal, #om-surp-unlock-modal, [id*="unlock-modal"], [class*="unlock-modal"], [id*="paywall"]');
+    unlockModals.forEach(m => {
+      m.classList.remove('is-open');
+      m.style.setProperty('display', 'none', 'important');
+    });
+  }
+
   window.initCherishlyShareSuite = function (container, currentShareUrl) {
     if (!container) return;
+
+    // Immediately close ANY payment/unlock modal that might be open behind
+    closeAllUnlockModals();
 
     // Remove existing if any
     const existing = container.querySelector('.om-share-suite');
@@ -644,7 +728,7 @@
     }
 
     const suiteWrap = document.createElement('div');
-    suiteWrap.className = 'om-share-suite om-sh2-fix';
+    suiteWrap.className = 'om-share-suite';
     suiteWrap.setAttribute('data-omsh-fix', '1');
     suiteWrap.removeAttribute('data-omsh-hide');
 
@@ -846,6 +930,30 @@
         urlObserver.observe(urlEl, { characterData: true, childList: true, subtree: true });
       }
     }
+
+    // Automatically request a short link from the Cloudflare Worker if we only have a direct ?d= link
+    async function requestShortLink() {
+      if (cleanUrl && cleanUrl.includes('/s/')) return;
+      try {
+        const payloadData = getDraftPayloadObject();
+        if (!payloadData) return;
+        const res = await fetch('https://cherishly-backend.manas0000singh.workers.dev/wp-json/om/v1/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product: category, data: payloadData })
+        });
+        const json = await res.json();
+        if (json && (json.code || json.slug)) {
+          const shortCode = json.code || json.slug;
+          const shortUrl = `${window.location.origin}/s/${shortCode}`;
+          updateUrlAcrossUI(shortUrl);
+        }
+      } catch (err) {
+        console.warn('Auto-shortlink fetch error:', err);
+      }
+    }
+
+    requestShortLink();
   };
 
   // ============================================================
@@ -1254,6 +1362,9 @@
             return;
           }
 
+          // Close all payment/unlock modals so they never show behind the share card
+          closeAllUnlockModals();
+
           const urlEl = modal.querySelector('.om-sh2-url, [id*="share-url"], .om-share-url');
           let currentUrl = (urlEl && urlEl.textContent && !urlEl.textContent.includes('Creating') && !urlEl.textContent.includes('...'))
             ? urlEl.textContent.trim()
@@ -1269,7 +1380,7 @@
             }
           });
 
-          const card = modal.querySelector('.om-bday-modal-body') || modal.querySelector('[class*="modal-card"]') || modal.querySelector('.om-anniv-modal-sheet') || modal.firstElementChild;
+          const card = modal.querySelector('.om-anniv-modal-body') || modal.querySelector('.om-bday-modal-body') || modal.querySelector('[class*="modal-card"]') || modal.querySelector('.om-anniv-modal-sheet') || modal.firstElementChild;
           if (card && !card.querySelector('.om-share-suite')) {
             window.initCherishlyShareSuite(card, currentUrl);
           }

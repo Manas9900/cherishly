@@ -261,14 +261,32 @@ export default {
             try { frontendOrigin = new URL(ref).origin; } catch (e) {}
           }
         }
-        if (!frontendOrigin) frontendOrigin = url.origin;
+        if (!frontendOrigin || frontendOrigin.includes('workers.dev')) {
+          frontendOrigin = 'https://cherishly-in.vercel.app';
+        }
+
+        // Detect product type
+        let product = body.product || body.type || (body.data && (body.data.product || body.data.type || body.data.k));
+        if (!product) {
+          const ref = request.headers.get('referer') || '';
+          for (const p of ['anniversary', 'girlfriend', 'birthday', 'friendship', 'apology', 'puzzle', 'surprise']) {
+            if (ref.includes('/' + p)) { product = p; break; }
+          }
+        }
+        if (!product) product = 'anniversary';
+
+        const wishData = body.data || body.config || body;
+        if (typeof wishData === 'object' && wishData !== null && !wishData.product) {
+          wishData.product = product;
+        }
 
         const record = {
           code: code,
+          product: product,
           createdAt: new Date().toISOString(),
           expiresAt: expiresAt,
           frontendOrigin: frontendOrigin,
-          data: body.data || body.config || body,
+          data: wishData,
           payment: {
             pid: body.pid || body.payment_id || null,
             order: body.order || null
@@ -282,7 +300,7 @@ export default {
           });
         }
 
-        const shareUrl = `${url.origin}/s/${code}`;
+        const shareUrl = `${frontendOrigin}/s/${code}`;
         return jsonRes({
           success: true,
           code: code,
@@ -408,8 +426,12 @@ export default {
 
       // ACTIVE LINK: Redirect directly to recipient experience on Vercel
       const wish = JSON.parse(raw);
-      const product = (wish.data && (wish.data.product || wish.data.type)) || 'anniversary';
-      const targetOrigin = wish.frontendOrigin || 'https://cherishly-in.vercel.app';
+      const product = wish.product || (wish.data && (wish.data.product || wish.data.type || wish.data.k)) || 'anniversary';
+      let targetOrigin = wish.frontendOrigin || 'https://cherishly-in.vercel.app';
+      if (!targetOrigin || targetOrigin.includes('workers.dev')) {
+        targetOrigin = 'https://cherishly-in.vercel.app';
+      }
+      targetOrigin = targetOrigin.replace(/\/+$/, '');
       
       let redirectUrl = `${targetOrigin}/${product}/`;
       try {

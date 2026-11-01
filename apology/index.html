@@ -976,6 +976,26 @@ var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof H
       if (!sSlot || !window.CherishlyAudioSuite) return;
       var voiceData = window.__omApolVoice || initial;
 
+      // Check ?d= payload or #draft= payload
+      if (!voiceData || !voiceData.url) {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var b64 = params.get('d');
+          if (!b64 && window.location.hash && window.location.hash.includes('#draft=')) {
+            b64 = window.location.hash.split('#draft=')[1].split('&')[0];
+          }
+          if (b64) {
+            b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+            while (b64.length % 4) b64 += '=';
+            var parsed = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            var sUrl = parsed.sg || parsed.song || parsed.vo || parsed.voiceUrl;
+            if (sUrl) {
+              voiceData = { url: sUrl, name: 'Our Dedicated Song 🎵', isSong: true };
+            }
+          }
+        } catch(e) {}
+      };
+
       // Also check URL parameters (e.g. ?song=... or ?v=...)
       if (!voiceData || !voiceData.url) {
         try {
