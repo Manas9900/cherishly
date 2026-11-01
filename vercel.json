@@ -2,13 +2,23 @@
   "cleanUrls": true,
   "redirects": [
     {
-      "source": "/cherishly-in.vercel.app/:match*",
-      "destination": "/:match*",
+      "source": "/cherishly-in.vercel.app/(.*)",
+      "destination": "/$1",
       "permanent": false
     },
     {
-      "source": "/cherishly.live/:match*",
-      "destination": "/:match*",
+      "source": "/cherishly.live/(.*)",
+      "destination": "/$1",
+      "permanent": false
+    },
+    {
+      "source": "/cherishly-in.vercel.app",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/cherishly.live",
+      "destination": "/",
       "permanent": false
     }
   ],
