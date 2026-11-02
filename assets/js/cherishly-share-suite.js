@@ -782,31 +782,41 @@
     });
     hideGuard.observe(suiteWrap, { attributes: true, attributeFilter: ['data-omsh-hide'] });
 
+    let isUpdatingUI = false;
     function updateUrlAcrossUI(newCandidateUrl) {
-      cleanUrl = resolveWorkingShareUrl(newCandidateUrl);
+      if (isUpdatingUI) return;
+      isUpdatingUI = true;
+      try {
+        const resolved = resolveWorkingShareUrl(newCandidateUrl);
+        if (!resolved) return;
+        cleanUrl = resolved;
 
-      // Update link bar
-      const barText = suiteWrap.querySelector('.om-ss-link-text');
-      if (barText) barText.textContent = cleanUrl;
-
-      // Update textarea with current preset
-      const ta = suiteWrap.querySelector('#om-ss-text');
-      if (ta) ta.value = getFullMessage(selectedPreset.text);
-
-      // Update parent ticket elements if present (e.g. .om-sh2)
-      if (modalParent) {
-        const ticketUrlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url-display"]');
-        if (ticketUrlEl) {
-          if (cleanUrl.includes('/s/')) {
-            ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
-          } else if (cleanUrl.includes('?d=')) {
-            const displayPart = cleanUrl.replace(/^https?:\/\//, '').replace(/\?d=.*$/, '/?d=...');
-            ticketUrlEl.textContent = displayPart;
-          } else {
-            ticketUrlEl.textContent = cleanUrl.replace(/^https?:\/\//, '');
-          }
-          ticketUrlEl.title = cleanUrl;
+        // Update link bar
+        const barText = suiteWrap.querySelector('.om-ss-link-text');
+        if (barText && barText.textContent !== cleanUrl) {
+          barText.textContent = cleanUrl;
         }
+
+        // Update textarea with current preset
+        const ta = suiteWrap.querySelector('#om-ss-text');
+        if (ta) ta.value = getFullMessage(selectedPreset.text);
+
+        // Update parent ticket elements if present (e.g. .om-sh2)
+        if (modalParent) {
+          const ticketUrlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url-display"]');
+          if (ticketUrlEl) {
+            let displayVal = cleanUrl.replace(/^https?:\/\//, '');
+            if (cleanUrl.includes('?d=')) {
+              displayVal = cleanUrl.replace(/^https?:\/\//, '').replace(/\?d=.*$/, '/?d=...');
+            }
+            if (ticketUrlEl.textContent !== displayVal) {
+              ticketUrlEl.textContent = displayVal;
+            }
+            ticketUrlEl.title = cleanUrl;
+          }
+        }
+      } finally {
+        isUpdatingUI = false;
       }
     }
 
@@ -917,19 +927,7 @@
       }, 600);
     });
 
-    // Observe urlEl to update cleanUrl if shortlink completes asynchronously
-    if (modalParent) {
-      const urlEl = modalParent.querySelector('.om-sh2-url, [id*="share-url"], .om-share-url');
-      if (urlEl) {
-        const urlObserver = new MutationObserver(() => {
-          const text = (urlEl.textContent || '').trim();
-          if (text && !text.includes('Creating') && !text.includes('...') && text !== cleanUrl) {
-            updateUrlAcrossUI(text);
-          }
-        });
-        urlObserver.observe(urlEl, { characterData: true, childList: true, subtree: true });
-      }
-    }
+    // URL synchronization handled directly by requestShortLink & updateUrlAcrossUI
 
     // Automatically request a short link from the Cloudflare Worker if we only have a direct ?d= link
     async function requestShortLink() {
@@ -1390,11 +1388,6 @@
       observer.observe(modal, { attributes: true, attributeFilter: ['class', 'style'] });
     });
 
-    // Also observe document body for dynamically added unlock payment modals
-    const bodyObserver = new MutationObserver(() => {
-      injectAdminIntoModals();
-    });
-    bodyObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === 'loading') {
