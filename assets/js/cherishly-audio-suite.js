@@ -13,6 +13,36 @@
 
   var BACKEND_URL = 'https://cherishly-backend.manas0000singh.workers.dev/wp-json/om/v1/upload-voice';
 
+  // Global tracking of all audio instances across all templates (both in-memory new Audio() and DOM <audio>)
+  var allAudioInstances = new Set();
+  var isDedicatedAudioPlaying = false;
+  var currentlyActiveDedicatedAudio = null;
+
+  if (typeof HTMLMediaElement !== 'undefined' && HTMLMediaElement.prototype && !HTMLMediaElement.prototype.__omPlayIntercepted) {
+    HTMLMediaElement.prototype.__omPlayIntercepted = true;
+    var originalPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function () {
+      allAudioInstances.add(this);
+      if (isDedicatedAudioPlaying && this !== currentlyActiveDedicatedAudio && !this.__omIsDedicatedAudio) {
+        this.__omWasPlaying = true;
+        return Promise.resolve();
+      }
+      return originalPlay.apply(this, arguments);
+    };
+  }
+
+  if (typeof window.Audio !== 'undefined' && !window.Audio.__omWrapped) {
+    var NativeAudio = window.Audio;
+    var WrappedAudio = function (src) {
+      var inst = src !== undefined ? new NativeAudio(src) : new NativeAudio();
+      allAudioInstances.add(inst);
+      return inst;
+    };
+    WrappedAudio.__omWrapped = true;
+    WrappedAudio.prototype = NativeAudio.prototype;
+    window.Audio = WrappedAudio;
+  }
+
   // Inject unified styles once
   var styleId = 'cherishly-audio-suite-styles';
   if (!document.getElementById(styleId)) {
@@ -376,11 +406,33 @@
     document.head.appendChild(style);
   }
 
+  function getAllAudios() {
+    var list = [];
+    allAudioInstances.forEach(function (a) {
+      if (a) list.push(a);
+    });
+    document.querySelectorAll('audio, video').forEach(function (el) {
+      if (!allAudioInstances.has(el)) list.push(el);
+    });
+    return list;
+  }
+
   // Audio Ducking Manager: cleanly pauses and resumes all background music
   function duckBackgroundMusic(shouldDuck, currentAudio) {
-    var audios = document.querySelectorAll('audio');
+    if (shouldDuck) {
+      isDedicatedAudioPlaying = true;
+      currentlyActiveDedicatedAudio = currentAudio;
+      if (currentAudio) currentAudio.__omIsDedicatedAudio = true;
+    } else {
+      if (currentlyActiveDedicatedAudio === currentAudio || !currentAudio) {
+        isDedicatedAudioPlaying = false;
+        currentlyActiveDedicatedAudio = null;
+      }
+    }
+
+    var audios = getAllAudios();
     audios.forEach(function (a) {
-      if (a !== currentAudio) {
+      if (a !== currentAudio && !a.__omIsDedicatedAudio) {
         if (shouldDuck) {
           if (!a.paused) {
             a.__omWasPlaying = true;
@@ -389,7 +441,12 @@
         } else {
           if (a.__omWasPlaying) {
             a.__omWasPlaying = false;
-            try { a.play(); } catch (e) {}
+            try {
+              var p = a.play();
+              if (p && typeof p.catch === 'function') {
+                p.catch(function () {});
+              }
+            } catch (e) {}
           }
         }
       }
@@ -398,6 +455,24 @@
     // Also support custom template audio controllers if present
     if (window._0x4a00a7 && typeof window._0x4a00a7.duck === 'function') {
       try { window._0x4a00a7.duck('vnote', shouldDuck); } catch (e) {}
+    }
+
+    // Support Birthday BGM controller if present
+    if (window._omBdayBgm && window._omBdayBgm !== currentAudio) {
+      if (shouldDuck) {
+        if (!window._omBdayBgm.paused) {
+          window._omBdayBgm.__omWasPlaying = true;
+          try { window._omBdayBgm.pause(); } catch(e){}
+        }
+      } else {
+        if (window._omBdayBgm.__omWasPlaying) {
+          window._omBdayBgm.__omWasPlaying = false;
+          try {
+            var bp = window._omBdayBgm.play();
+            if (bp && typeof bp.catch === 'function') bp.catch(function(){});
+          } catch(e){}
+        }
+      }
     }
   }
 

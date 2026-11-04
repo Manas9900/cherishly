@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Cherishly Compact & Responsive Interactive Share Suite
  * Optimized to fit 100% on any mobile screen without cutting out.
  * Features:
@@ -579,6 +579,11 @@
           while (b64.length % 4) b64 += '=';
           const parsed = JSON.parse(decodeURIComponent(escape(atob(b64))));
           parsed.product = category;
+          if (category === 'birthday' && window.__omBdayVoice && window.__omBdayVoice.url) {
+            parsed.vo = window.__omBdayVoice.url;
+            parsed.isSong = !!window.__omBdayVoice.isSong;
+            parsed.songTitle = window.__omBdayVoice.name || '';
+          }
           return parsed;
         }
       }
@@ -598,7 +603,33 @@
       if (raw) {
         const parsed = JSON.parse(raw);
         parsed.product = category;
+        if (category === 'birthday' && window.__omBdayVoice && window.__omBdayVoice.url) {
+          parsed.vo = window.__omBdayVoice.url;
+          parsed.isSong = !!window.__omBdayVoice.isSong;
+          parsed.songTitle = window.__omBdayVoice.name || '';
+        }
         return parsed;
+      }
+
+      if (category === 'birthday') {
+        if (typeof window._omBdayGetDirectUrl === 'function') {
+          try {
+            var bdayUrl = window._omBdayGetDirectUrl();
+            if (bdayUrl && bdayUrl.includes('?d=')) {
+              var b64b = bdayUrl.split('?d=')[1];
+              b64b = b64b.replace(/-/g, '+').replace(/_/g, '/');
+              while (b64b.length % 4) b64b += '=';
+              var bdayParsed = JSON.parse(decodeURIComponent(escape(atob(b64b))));
+              bdayParsed.product = 'birthday';
+              if (window.__omBdayVoice && window.__omBdayVoice.url) {
+                bdayParsed.vo = window.__omBdayVoice.url;
+                bdayParsed.isSong = !!window.__omBdayVoice.isSong;
+                bdayParsed.songTitle = window.__omBdayVoice.name || '';
+              }
+              return bdayParsed;
+            }
+          } catch(e) {}
+        }
       }
 
       const gfData = window._omGfBuilderData || window.OM_GIRLFRIEND_DATA;
@@ -627,7 +658,7 @@
     }
   }
 
-  function resolveWorkingShareUrl(candidateUrl) {
+    function resolveWorkingShareUrl(candidateUrl) {
     let url = candidateUrl ? String(candidateUrl).trim() : '';
 
     let path = window.location.pathname.replace(/\/index\.html$/, '');
