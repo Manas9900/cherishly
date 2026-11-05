@@ -674,13 +674,13 @@
       url = 'https:' + url;
     }
 
-    // 3. If it starts with any domain name without protocol (e.g. cherishly-in.vercel.app or cherishly.live)
+    // 3. If it starts with any domain name without protocol (e.g. cherishly-in.vercel.app or cherishly.in)
     if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/i.test(url)) {
       url = 'https://' + url;
     }
 
-    // 4. Fix any Cherishly.live / vercel domain to current window origin
-    if (url.includes('Cherishly.live') || url.includes('cherishly.live')) {
+    // 4. Fix any cherishly.in / vercel domain to current window origin
+    if (url.includes('cherishly.in') || url.includes('cherishly.in')) {
       url = url.replace(/https?:\/\/[a-zA-Z0-9.-]*cherishly\.live/i, window.location.origin);
     }
 
