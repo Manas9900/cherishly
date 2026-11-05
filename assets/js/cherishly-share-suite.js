@@ -116,7 +116,7 @@
       });
     }
 
-    if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=')) {
+    if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=') && !window.location.hash.includes('#draft=')) {
       if (!sessionStorage.getItem('cherishly_just_generated')) {
         resetStickyOrderState();
         // ONLY target SHARE modals, NEVER unlock / payment modals!
@@ -805,10 +805,14 @@
     // Ensure suiteWrap is inserted into container
     container.appendChild(suiteWrap);
 
-    // Watch for template attempting to set data-omsh-hide on suiteWrap
+    // Watch for template attempting to set data-omsh-hide on suiteWrap (guarded against re-entrancy)
+    let hideGuardActive = false;
     const hideGuard = new MutationObserver(() => {
+      if (hideGuardActive) return;
       if (suiteWrap.hasAttribute('data-omsh-hide')) {
+        hideGuardActive = true;
         suiteWrap.removeAttribute('data-omsh-hide');
+        hideGuardActive = false;
       }
     });
     hideGuard.observe(suiteWrap, { attributes: true, attributeFilter: ['data-omsh-hide'] });
@@ -1380,16 +1384,23 @@
       const modal = document.getElementById(id);
       if (!modal) return;
 
+      let isHandlingMutation = false;
       const observer = new MutationObserver(() => {
-        const isOpen = modal.classList.contains('is-open') || modal.style.display === 'flex' || modal.style.display === 'block';
-        if (isOpen) {
-          // If not genuinely just generated in this session and builder page, close it
-          if (!window.location.search.includes('?d=') && !window.location.search.includes('?wish=') && !sessionStorage.getItem('cherishly_just_generated')) {
-            modal.classList.remove('is-open');
-            modal.style.display = 'none';
-            resetStickyOrderState();
-            return;
-          }
+        if (isHandlingMutation) return;
+        isHandlingMutation = true;
+        try {
+          const isOpen = modal.classList.contains('is-open') || modal.style.display === 'flex' || modal.style.display === 'block';
+          if (isOpen) {
+            // If not genuinely just generated in this session and builder page without draft, close it
+            if (!window.location.search.includes('?d=') && 
+                !window.location.search.includes('?wish=') && 
+                !window.location.hash.includes('#draft=') && 
+                !sessionStorage.getItem('cherishly_just_generated')) {
+              modal.classList.remove('is-open');
+              modal.style.display = 'none';
+              resetStickyOrderState();
+              return;
+            }
 
           // Close all payment/unlock modals so they never show behind the share card
           closeAllUnlockModals();
@@ -1413,6 +1424,9 @@
           if (card && !card.querySelector('.om-share-suite')) {
             window.initCherishlyShareSuite(card, currentUrl);
           }
+        }
+        } finally {
+          isHandlingMutation = false;
         }
       });
 
