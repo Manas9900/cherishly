@@ -402,15 +402,6 @@
         color: #DC2626;
         margin-top: 6px;
       }
-    
-      /* Temporarily hide song upload UI for Razorpay approval */
-      .om-as-tabs {
-        display: none !important;
-      }
-      .om-as-tab[data-mode="song"],
-      .om-as-panel[data-panel="song"] {
-        display: none !important;
-      }
     `;
     document.head.appendChild(style);
   }
@@ -505,7 +496,6 @@
 
     container.innerHTML = `
       <div class="om-as-box">
-        <div class="om-as-voice-hdr" style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0F172A;margin-bottom:8px;padding:0 2px;"><span>🎙</span> Record Voice Note <span style="font-size:11.5px;font-weight:500;color:#64748B;">(optional)</span></div>
         <div class="om-as-tabs">
           <button type="button" class="om-as-tab is-active" data-mode="rec">
             <span>🎙️</span> Record Voice
